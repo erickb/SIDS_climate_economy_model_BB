@@ -1,0 +1,11 @@
+:GRAPH Checking_prices
+:TITLE Compare price series
+:SCALE
+:VAR price of exports|Exports - sim
+:DATASET Scenario stochastic.vdf
+:VAR price of exports|Exports- data
+:DATASET calibration/JM.vdf
+:VAR price of imports|Imports - sim
+:DATASET Scenario stochastic.vdf
+:VAR price of imports|Imports - data
+:DATASET calibration/JM.vdf
