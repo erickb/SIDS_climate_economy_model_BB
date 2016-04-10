@@ -868,11 +868,11 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 18:GLCS_two_sector.vsc
 20:GLCS_two_sector.lst
 15:1,0,0,0,0,0
-19:100,4
+19:100,0
 27:0,
 34:0,
 4:Time
-5:X[scenario]
+5:debt to gdp ratio[scenario]
 35:Year
 36:YYYY
 37:0
