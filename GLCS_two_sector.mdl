@@ -862,6 +862,8 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 :VAR X prod|Production
 :L<%^E!@
 1:Scenario stochastic.vdf
+1:BB_pop.vdf
+1:BB.vdf
 8:scenario_graphs.vgd
 9:Scenario stochastic
 30:?params=GLCS_two_sector_parameters.xlsx
@@ -872,7 +874,7 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 27:0,
 34:0,
 4:Time
-5:debt to gdp ratio[scenario]
+5:gdp[scenario]
 35:Year
 36:YYYY
 37:0
@@ -881,10 +883,7 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 40:0
 41:0
 42:0
-24:2011
+24:1950
 25:2055
 26:2055
-6:CS1
-6:CS2
 6:CS3
-6:CS4
