@@ -1,22 +1,10 @@
-:GRAPH Checking_prices
-:TITLE Compare price series
-:SCALE
-:VAR price of exports|Exports - sim
-:DATASET Scenario stochastic.vdf
-:VAR price of exports|Exports- data
-:DATASET calibration/JM.vdf
-:VAR price of imports|Imports - sim
-:DATASET Scenario stochastic.vdf
-:VAR price of imports|Imports - data
-:DATASET calibration/JM.vdf
-
 :GRAPH GDP_truncated
 :TITLE  
 :SCALE
-:VAR gdp[CS1]|CS1
-:Y-MAX 30000
-:VAR gdp[CS2]|CS2
-:VAR gdp[CS3]|CS3
-:VAR gdp[CS4]|CS4
-:VAR gdp[CS3]|historical
-:DATASET BB
+:VAR gdp[CS1]
+:Y-MAX 4e+006
+:VAR gdp[CS2]
+:VAR gdp[CS3]
+:VAR gdp[CS4]
+:VAR gdp[CS1]
+:DATASET JM

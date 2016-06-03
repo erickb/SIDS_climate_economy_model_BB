@@ -1,4 +1,336 @@
 {UTF-8}
+net new loans[scenario]=
+	interest bearing fraction*net new external liabilities[scenario]/exchange rate
+	~	
+	~		|
+
+investment rate[scenario]=
+	max(0,(smoothed gdp growth rate[scenario] + base investment rate + investment utilization term\
+		[scenario] - investment debt term[scenario]))
+	~	
+	~		|
+
+change in consumer price inflation[scenario]=
+	consumer price inflation constant - consumer price inflation autoregressive coeff * \
+		consumer price inflation[scenario] - consumer price inflation gdp pc growth coefficient
+	 * gdp per capita gr[scenario]
+	~	
+	~		|
+
+domestic price of imports=
+	exchange rate * price of imports
+	~	
+	~		|
+
+gdp price inflation[scenario]=
+	(c d + (1 - q) * c x) * (1 - exports as a share of gdp[scenario]) * gr price of consumption\
+		[scenario] + (q * (1 - exports as a share of gdp[scenario]
+	) * c x + exports as a share of gdp[scenario]) * gr domestic price of exports
+	~	
+	~		|
+
+import elasticity:=
+	GET XLS DATA('?params', 'imports', '3' , 'C5' )
+	~	
+	~		|
+
+adj coeff my[scenario]=
+	coeff my * (domestic price of imports/price of consumption[scenario])^import elasticity
+	~	
+	~	(1 + import elasticity * (theta/SMOOTH(theta,TIME STEP)-1))
+	|
+
+imports[scenario]=
+	(GDP price level[scenario]/domestic price of imports) * adj coeff my[scenario] * gdp\
+		[scenario]
+	~	
+	~		|
+
+gdp price increase[scenario]=
+	gdp price inflation[scenario] * GDP price level[scenario]
+	~	
+	~		|
+
+GDP price level[scenario]= INTEG (
+	gdp price increase[scenario],
+		initial gdp price level)
+	~	
+	~		|
+
+gdp indirect[scenario]=
+	marginal expenditure on domestic goods * (Wage bill smoothed[scenario] - gdp basic consumption direct\
+		[scenario])
+	~	
+	~		|
+
+wage bill delay[scenario]=
+	Wage bill smoothed[scenario]
+	~	
+	~		|
+
+gdp[scenario]=
+	gdp nominal[scenario]/SMOOTH(GDP price level[scenario],TIME STEP)
+	~	
+	~		|
+
+Wage bill smoothed[scenario]= INTEG (
+	((wages basic consumption contribution[scenario]+wages export contribution[scenario]\
+		+wages smoothing contribution[scenario])/production determinant[scenario]-wage bill delay\
+		[scenario])/wage smoothing,
+		init smoothed wage bill)
+	~	
+	~		|
+
+debt to gdp ratio[scenario]=
+	exchange rate * D[scenario]/(GDP price level[scenario] * gdp[scenario])
+	~	
+	~		|
+
+Omega[scenario]=
+	marginal expenditure on domestic goods * ((1 - z) * Wage bill smoothed[scenario]/price of consumption\
+		[scenario] - real basic consumption)
+	~	
+	~		|
+
+wages smoothing contribution[scenario]=
+	(wages smoothing contribution x[scenario] + wages smoothing contribution d[scenario]\
+		) * Omega[scenario]
+	~	
+	~		|
+
+production determinant[scenario]=
+	(1 - A xx[scenario]) * (1 - A dd[scenario]) - A dx[scenario] * A xd[scenario]
+	~	
+	~	Expect production to determinant to decline over time.
+	|
+
+A dx[scenario]=
+	tech coeff dx + theta[scenario] * z * c d * marginal expenditure on domestic goods *\
+		 wage share export
+	~	
+	~		|
+
+A xd[scenario]=
+	tech coeff xd + theta[scenario]^(-q) * z * c x * marginal expenditure on domestic goods\
+		 * wage share domestic
+	~	
+	~		|
+
+A xx[scenario]=
+	theta[scenario]^(1-q) * z * c x * marginal expenditure on domestic goods * wage share export
+	~	
+	~		|
+
+wages export contribution[scenario]=
+	(wage share export * domestic price of exports * (1 - A dd[scenario]) + wage share domestic\
+		 * price of consumption[scenario] * A dx[scenario]) * X[scenario]
+	~	
+	~		|
+
+wages smoothing contribution d[scenario]=
+	wage share domestic * price of consumption[scenario] * (A dx[scenario] * theta[scenario\
+		]^(-q) * c x + (1 - A xx[scenario]) * c d)
+	~	
+	~		|
+
+wages smoothing contribution x[scenario]=
+	wage share export * domestic price of exports * ((1-A dd[scenario]) * theta[scenario\
+		]^(-q)*c x + A xd[scenario] * c d)
+	~	
+	~		|
+
+wages basic consumption contribution[scenario]=
+	(wage share export * domestic price of exports * A xd[scenario] + wage share domestic\
+		 * price of consumption[scenario] * (1 - A xx[scenario])) * real basic consumption
+	~	
+	~		|
+
+A dd[scenario]=
+	z * c d * marginal expenditure on domestic goods * wage share domestic
+	~	
+	~		|
+
+gdp basic consumption direct[scenario]=
+	real basic consumption * price of consumption[scenario]
+	~	
+	~		|
+
+c d=
+	1-c x
+	~	
+	~		|
+
+c x:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C12' )
+	~	
+	~		|
+
+real basic consumption=
+	minimum consumption level * N
+	~	
+	~		|
+
+gdp nominal[scenario]=
+	gdp basic consumption direct[scenario] + gdp exports direct[scenario] + gdp indirect\
+		[scenario]
+	~	
+	~		|
+
+change in gdp[scenario]=
+	gdp[scenario]/SMOOTH(gdp[scenario],TIME STEP) - 1
+	~	
+	~		|
+
+initial gdp price level=
+	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C10' )
+	~	
+	~		|
+
+minimum consumption level:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C6' )
+	~	
+	~		|
+
+gr domestic price of exports=
+	(domestic price of exports/SMOOTH(domestic price of exports,TIME STEP) - 1)/TIME STEP
+	~	
+	~		|
+
+gr price of consumption[scenario]=
+	(price of consumption[scenario]/SMOOTH(price of consumption[scenario],TIME STEP) - 1\
+		)/TIME STEP
+	~	
+	~		|
+
+wage share domestic:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C7' )
+	~	
+	~		|
+
+wage share export:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C8' )
+	~	
+	~		|
+
+init smoothed wage bill=
+	init wage basic cons mult * real basic consumption
+	~	
+	~		|
+
+init wage basic cons mult=
+	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C11' )
+	~	
+	~		|
+
+gdp per capita[scenario]=
+	1000*gdp[scenario]/N
+	~	
+	~		|
+
+domestic price of exports=
+	exchange rate * price of exports
+	~	
+	~		|
+
+tech coeff xd:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C9' )
+	~	
+	~		|
+
+theta[scenario]=
+	domestic price of exports/price of consumption[scenario]
+	~	
+	~		|
+
+exports as a share of gdp[scenario]=
+	gdp exports direct[scenario]/gdp nominal[scenario]
+	~	
+	~		|
+
+gdp growth rate[scenario]=
+	gdp[scenario]/SMOOTH(gdp[scenario],TIME STEP) - 1
+	~	
+	~		|
+
+marginal expenditure on domestic goods:INTERPOLATE::=
+	GET XLS DATA('?params', 'GDP', '3' , 'C5' )
+	~	
+	~		|
+
+gdp exports direct[scenario]=
+	X[scenario] * domestic price of exports
+	~	
+	~		|
+
+wage smoothing:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C13' )
+	~	
+	~		|
+
+tech coeff dx:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C10' )
+	~	
+	~		|
+
+q:=
+	GET XLS DATA('?params', 'GDP', '3' , 'C11' )
+	~	
+	~		|
+
+z=
+	TIME STEP/wage smoothing
+	~	
+	~		|
+
+price of consumption[scenario]= INTEG (
+	inflation cpi[scenario],
+		initial price of consumption)
+	~	
+	~		|
+
+initial price of consumption=
+	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C9' )
+	~	
+	~		|
+
+consumer price inflation[scenario]= INTEG (
+	change in consumer price inflation[scenario],
+		initial consumer price inflation)
+	~	
+	~		|
+
+consumer price inflation autoregressive coeff=
+	0.7
+	~	
+	~	Empirically estimated, equal to -(0.3 - 1.0).
+	|
+
+consumer price inflation gdp pc growth coefficient=
+	0.2
+	~	
+	~	Empirically determined.
+	|
+
+inflation cpi[scenario]=
+	consumer price inflation[scenario] * price of consumption[scenario]
+	~	
+	~		|
+
+consumer price inflation constant:=
+	GET XLS DATA('?params', 'Prices', '3' , 'D6' )
+	~	
+	~		|
+
+initial consumer price inflation=
+	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C7' )
+	~	
+	~		|
+
+gdp per capita gr[scenario]=
+	gdp per capita[scenario]/SMOOTH(gdp per capita[scenario],TIME STEP) - 1
+	~	
+	~		|
+
 average interest rate on debt[scenario]= INTEG (
 	new interest[scenario]-old interest[scenario],
 		interest rate on new loans)
@@ -23,11 +355,6 @@ change in exports[scenario]=
 	~	
 	~		|
 
-change in gdp[scenario]=
-	gdp[scenario]/SMOOTH(gdp[scenario],TIME STEP) - 1
-	~	
-	~		|
-
 change in utilization[scenario]=
 	marginal change in utilization[scenario] * utilization ratio[scenario]
 	~	
@@ -35,41 +362,6 @@ change in utilization[scenario]=
 
 marginal change in utilization[scenario]=
 	change in gdp[scenario] - change in capital stock[scenario]
-	~	
-	~		|
-
-gdp exports direct[scenario]=
-	X prod[scenario] * px norm
-	~	
-	~		|
-
-gdp exports indirect[scenario]=
-	common multiplier * (wage share domestic * gdp coeff xd * pd norm + wage share export\
-		 * gdp coeff xx * px norm) * X prod[scenario]
-	~	
-	~		|
-
-gdp growth rate[scenario]=
-	gdp[scenario]/SMOOTH(gdp[scenario],TIME STEP) - 1
-	~	
-	~		|
-
-X prod[scenario]=
-	SMOOTHI(X[scenario],X prod smoothing,init X prod) * (1 + X prod smoothing * (SMOOTH(\
-		X[scenario],2)-SMOOTH(X[scenario],1))/(2*SMOOTH(X[scenario],1) - SMOOTH(X[scenario]\
-		,2
-	)))
-	~	
-	~	base + prediction
-	|
-
-gdp per capita[scenario]=
-	1000*gdp[scenario]/N
-	~	
-	~		|
-
-imports[scenario]=
-	(price level of gdp/price of imports) * coeff my * gdp[scenario]
 	~	
 	~		|
 
@@ -84,11 +376,6 @@ D[scenario]= INTEG (
 	~	
 	~		|
 
-debt to gdp ratio[scenario]=
-	exchange rate * D[scenario]/(price level of gdp * gdp[scenario])
-	~	
-	~		|
-
 depreciation[scenario]=
 	(depreciation rate + climate damage) * K[scenario]
 	~	
@@ -96,12 +383,6 @@ depreciation[scenario]=
 
 new interest[scenario]=
 	interest rate on new loans * new debt[scenario]/D[scenario]
-	~	
-	~		|
-
-phi exponent[scenario]= INTEG (
-	incr phi exponent[scenario],
-		0)
 	~	
 	~		|
 
@@ -122,20 +403,9 @@ previous utilization deviation[scenario]=
 	~	
 	~		|
 
-gdp[scenario]=
-	gdp exports direct[scenario] + gdp basic consumption direct + gdp exports indirect[scenario\
-		] + gdp basic consumption indirect
-	~	
-	~		|
-
 K[scenario]= INTEG (
 	investment and rebuilding[scenario]-depreciation[scenario],
 		initial capital)
-	~	
-	~		|
-
-incr phi exponent[scenario]=
-	investment debt term[scenario] + investment utilization term[scenario] - foreign domestic investment gap
 	~	
 	~		|
 
@@ -156,11 +426,6 @@ investment utilization term[scenario]=
 
 interest on debt[scenario]=
 	average interest rate on debt[scenario] * D[scenario]
-	~	
-	~		|
-
-phi[scenario]=
-	initial phi/(initial phi + (1-initial phi)*exp(phi exponent[scenario]))
 	~	
 	~		|
 
@@ -191,19 +456,6 @@ utilization ratio[scenario]= INTEG (
 	~	
 	~		|
 
-investment rate[scenario]=
-	max(0,(smoothed gdp growth rate[scenario] + base investment rate + (1 - phi[scenario\
-		]) * investment utilization term[scenario]
-	 - phi[scenario] * investment debt term[scenario]))
-	~	
-	~		|
-
-net new loans[scenario]=
-	interest bearing fraction*(phi[scenario] * net saving[scenario] + (1-phi[scenario]) \
-		* net new external liabilities[scenario])/exchange rate
-	~	
-	~		|
-
 rebuild after climate damage=
 	GET XLS CONSTANTS( '?params' , 'Switches' , 'C3' )
 	~	
@@ -230,16 +482,6 @@ climate damage=
 	~	
 	~		|
 
-X prod smoothing:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C13' )
-	~	
-	~		|
-
-production determinant:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C4' )
-	~	
-	~		|
-
 mean export growth rate[scenario]:INTERPOLATE::=
 	GET XLS DATA('?params', 'Exports' , '3' , 'D4' )
 	~	
@@ -252,11 +494,6 @@ initial exports=
 		Data: 3.6e+009
 	|
 
-marginal expenditure on domestic goods:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C5' )
-	~	
-	~		|
-
 NOISE SEED=
 	1324
 	~	
@@ -267,84 +504,8 @@ export growth standard deviation[scenario]:INTERPOLATE::=
 	~	
 	~		|
 
-real basic consumption=
-	(1 - marginal expenditure on domestic goods) * minimum consumption level * N
-	~	
-	~		|
-
-common multiplier=
-	marginal expenditure on domestic goods/production determinant
-	~	
-	~		|
-
-gdp basic consumption direct=
-	real basic consumption * pd norm
-	~	
-	~		|
-
-gdp basic consumption indirect=
-	common multiplier * (wage share domestic * gdp coeff nd * pd norm + wage share export\
-		 * gdp coeff nx * px norm) * real basic consumption
-	~	
-	~		|
-
-gdp coeff nd:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C11' )
-	~	
-	~		|
-
-gdp coeff nx:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C12' )
-	~	
-	~		|
-
-gdp coeff xx:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C10' )
-	~	
-	~		|
-
-minimum consumption level:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C6' )
-	~	
-	~		|
-
-px norm=
-	price of exports/price level of gdp
-	~	
-	~		|
-
-gdp coeff xd:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C9' )
-	~	
-	~		|
-
-wage share domestic:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C7' )
-	~	
-	~		|
-
-foreign domestic investment gap:=
-	GET XLS DATA('?params', 'Investment and Saving', '4' , 'C9' )
-	~	
-	~		|
-
-pd norm=
-	price of consumption/price level of gdp
-	~	
-	~		|
-
 reference debt to gdp level:INTERPOLATE::=
 	GET XLS DATA('?params', 'Investment and Saving', '12' , 'C15' )
-	~	
-	~		|
-
-wage share export:=
-	GET XLS DATA('?params', 'GDP', '3' , 'C8' )
-	~	
-	~		|
-
-init X prod=
-	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C7' )
 	~	
 	~		|
 
@@ -355,11 +516,6 @@ interest bearing fraction:INTERPOLATE::=
 
 gdp growth smoothing:=
 	GET XLS DATA('?params', 'GDP', '3' , 'C14' )
-	~	
-	~		|
-
-initial phi=
-	GET XLS CONSTANTS( '?params' , 'Initial Values' , 'C8' )
 	~	
 	~		|
 
@@ -380,16 +536,6 @@ coeff iu:INTERPOLATE::=
 
 coeff my:=
 	GET XLS DATA('?params', 'imports', '3' , 'C4' )
-	~	
-	~		|
-
-price level of gdp:=
-	GET XLS DATA('?params', 'Prices', '3' , 'D9' )
-	~	
-	~		|
-
-price of consumption:=
-	GET XLS DATA('?params', 'Prices', '3' , 'D6' )
 	~	
 	~		|
 
@@ -504,182 +650,200 @@ TIME STEP  = 0.25
 V300  Do not put anything below this section - it will be ignored
 *core model
 $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
-10,1,K,521,277,40,20,3,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
-10,2,D,926,415,40,20,3,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
-10,3,initial capital,518,219,39,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
-1,4,3,1,1,0,0,0,0,64,1,-1--1--1,,1|(530,248)|
-12,5,48,345,274,10,8,0,3,0,0,-1,0,0,0
-1,6,8,1,4,0,0,22,0,0,0,-1--1--1,,1|(452,280)|
-1,7,8,5,100,0,0,22,0,0,0,-1--1--1,,1|(383,280)|
-11,8,48,418,280,6,8,34,3,0,0,1,0,0,0
-10,9,investment and rebuilding,418,307,47,19,40,3,0,2,-1,0,0,0,-1--1--1,0-0-0,|12||255-128-0
-12,10,48,639,277,10,8,0,3,0,0,-1,0,0,0
-1,11,13,10,4,0,0,22,0,0,0,-1--1--1,,1|(615,277)|
-1,12,13,1,100,0,0,22,0,0,0,-1--1--1,,1|(575,277)|
-11,13,48,595,277,6,8,34,3,0,0,1,0,0,0
-10,14,depreciation,595,296,39,11,40,3,0,0,-1,0,0,0
-1,15,1,13,1,0,0,0,0,64,0,-1--1--1,,1|(573,238)|
-10,16,depreciation rate,672,325,53,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,17,16,14,1,0,0,0,0,64,0,-1--1--1,,1|(603,317)|
-12,18,48,770,417,10,8,0,3,0,0,-1,0,0,0
-1,19,21,2,4,0,0,22,0,0,0,-1--1--1,,1|(862,417)|
-1,20,21,18,100,0,0,22,0,0,0,-1--1--1,,1|(803,417)|
-11,21,48,833,417,6,8,34,3,0,0,1,0,0,0
-10,22,net new loans,833,436,43,11,40,3,0,0,-1,0,0,0
-12,23,48,928,512,10,8,0,3,0,0,-1,0,0,0
-1,24,26,2,4,0,0,22,0,0,0,-1--1--1,,1|(930,449)|
-1,25,26,23,100,0,0,22,0,0,0,-1--1--1,,1|(930,489)|
-11,26,48,930,469,8,6,33,3,0,0,4,0,0,0
-10,27,interest on debt,987,469,49,11,40,3,0,0,-1,0,0,0
-10,28,interest rate on new loans,1328,504,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,29,initial external debt,853,496,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
-1,30,29,2,1,0,0,0,0,64,1,-1--1--1,,1|(886,450)|
-10,31,base investment rate,233,214,50,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,32,net new external liabilities,1003,132,52,19,8,131,0,0,0,0,0,0
-10,33,debt to gdp ratio,501,112,53,11,8,3,0,0,0,0,0,0
-1,34,1,9,1,0,0,0,0,64,0,-1--1--1,,1|(471,242)|
-10,35,coeff id,517,190,25,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,36,coeff iu,114,365,24,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,37,imports,774,191,25,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
-10,38,coeff my,683,142,28,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,39,38,37,1,0,0,0,0,128,0,-1--1--1,,1|(750,154)|
-10,40,price of exports,1012,45,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,41,price of imports,1014,203,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,42,price level of gdp,857,259,46,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,43,42,37,1,0,0,0,0,128,0,-1--1--1,,1|(843,227)|
-10,44,price of consumption,774,221,45,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,45,price level of gdp,599,29,46,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,46,price of imports,773,111,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,47,46,37,1,0,0,0,0,64,0,-1--1--1,,1|(784,141)|
-10,48,exchange rate,1022,190,53,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,49,TIME STEP,1488,501,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,50,exchange rate,618,118,53,4,8,130,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,51,50,33,1,0,0,0,0,128,0,-1--1--1,,1|(552,106)|
-10,52,TIME STEP,1006,353,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,53,52,2,0,0,0,0,0,64,0,-1--1--1,,1|(977,375)|
-10,54,average interest rate on debt,1330,437,56,19,3,131,0,0,0,0,0,0
-1,55,28,54,1,0,0,0,0,128,1,-1--1--1,,1|(1335,476)|
-12,56,48,1199,432,10,8,0,3,0,0,-1,0,0,0
-1,57,59,54,4,0,0,22,0,0,0,-1--1--1,,1|(1260,432)|
-1,58,59,56,100,0,0,22,0,0,0,-1--1--1,,1|(1222,432)|
-11,59,48,1241,432,6,8,34,3,0,0,1,0,0,0
-10,60,new interest,1241,451,38,11,40,3,0,0,-1,0,0,0
-1,61,28,60,1,0,0,0,0,128,0,-1--1--1,,1|(1267,492)|
-10,62,D,1329,559,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-12,63,48,1489,438,10,8,0,3,0,0,-1,0,0,0
-1,64,66,63,4,0,0,22,0,0,0,-1--1--1,,1|(1458,438)|
-1,65,66,54,100,0,0,22,0,0,0,-1--1--1,,1|(1406,438)|
-11,66,48,1432,438,6,8,34,3,0,0,1,0,0,0
-10,67,old interest,1432,457,35,11,40,3,0,0,-1,0,0,0
-1,68,62,67,1,0,0,0,0,128,0,-1--1--1,,1|(1389,528)|
-1,69,62,60,1,0,0,0,0,128,0,-1--1--1,,1|(1265,521)|
-1,70,54,66,1,0,0,0,0,128,0,-1--1--1,,1|(1363,403)|
-10,71,average interest rate on debt,1033,518,55,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,72,previous utilization deviation,310,393,58,19,8,3,0,0,0,0,0,0
-10,73,TIME STEP,1425,286,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,74,new debt,1324,325,30,11,8,3,0,0,0,0,0,0
-1,75,74,59,1,0,0,0,0,128,0,-1--1--1,,1|(1260,358)|
-1,76,74,66,1,0,0,0,0,128,0,-1--1--1,,1|(1400,361)|
-1,77,45,33,1,0,0,0,0,128,0,-1--1--1,,1|(566,64)|
-10,78,TIME STEP,218,430,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,79,78,72,1,0,0,0,0,128,0,-1--1--1,,1|(273,416)|
-10,80,utilization ratio,129,396,54,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,81,80,72,1,0,0,0,0,128,0,-1--1--1,,1|(214,399)|
-10,82,initial utilization,344,454,56,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,83,82,72,1,0,0,0,0,64,0,-1--1--1,,1|(322,424)|
-10,84,gdp growth rate,369,93,50,11,8,3,0,0,0,0,0,0
-10,85,price of investment,1294,90,39,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,86,41,32,1,0,0,0,0,128,0,-1--1--1,,1|(1014,169)|
-1,87,40,32,1,0,0,0,0,128,0,-1--1--1,,1|(1008,73)|
-10,88,TIME STEP,251,108,41,11,8,3,0,0,-1,0,0,0
-1,89,88,84,1,0,0,0,0,128,0,-1--1--1,,1|(291,113)|
-10,90,smoothed gdp growth rate,283,165,46,19,8,3,0,0,0,0,0,0
-1,91,84,90,1,0,0,0,0,128,0,-1--1--1,,1|(349,130)|
-10,92,gdp growth smoothing,167,126,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,93,92,90,1,0,0,0,0,128,0,-1--1--1,,1|(235,143)|
-10,94,exchange rate,792,323,53,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,95,94,22,1,0,0,0,0,64,0,-1--1--1,,1|(803,365)|
-10,96,net new loans,1315,232,52,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,97,96,74,1,0,0,0,0,128,0,-1--1--1,,1|(1344,273)|
-1,98,2,27,1,0,0,0,0,64,0,-1--1--1,,1|(978,422)|
-1,99,71,27,1,0,0,0,0,128,0,-1--1--1,,1|(1049,483)|
-10,100,net saving,1143,86,32,11,8,3,0,0,0,0,0,0
-1,101,32,100,1,0,0,0,0,128,0,-1--1--1,,1|(1081,123)|
-10,102,investment and rebuilding,1215,21,52,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,103,price of investment,1279,72,39,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,104,102,100,1,0,0,0,0,128,0,-1--1--1,,1|(1170,51)|
-1,105,103,100,1,0,0,0,0,128,0,-1--1--1,,1|(1228,100)|
-10,106,net saving,722,494,41,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,107,106,22,1,0,0,0,0,128,0,-1--1--1,,1|(767,473)|
-10,108,net new external liabilities,680,466,57,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,109,108,22,1,0,0,0,0,128,0,-1--1--1,,1|(761,461)|
-10,110,phi,565,460,11,11,8,3,0,0,0,0,0,0
-1,111,110,22,1,0,0,0,0,128,0,-1--1--1,,1|(667,436)|
-10,112,initial phi,572,516,28,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
-1,113,112,110,1,0,0,0,0,128,0,-1--1--1,,1|(565,470)|
-10,114,investment debt term,422,212,50,19,8,3,0,0,0,0,0,0
-1,115,33,114,1,0,0,0,0,128,0,-1--1--1,,1|(404,149)|
-1,116,35,114,1,0,0,0,0,128,0,-1--1--1,,1|(466,185)|
-10,117,investment utilization term,233,337,46,19,8,3,0,0,0,0,0,0
-1,118,72,117,1,0,0,0,0,128,0,-1--1--1,,1|(284,361)|
-1,119,36,117,1,0,0,0,0,128,0,-1--1--1,,1|(169,371)|
-10,120,phi exponent,474,538,47,22,3,131,0,0,0,0,0,0
-12,121,48,306,539,10,8,0,3,0,0,-1,0,0,0
-1,122,124,120,4,0,0,22,0,0,0,-1--1--1,,1|(402,539)|
-1,123,124,121,100,0,0,22,0,0,0,-1--1--1,,1|(340,539)|
-11,124,48,371,539,6,8,34,3,0,0,1,0,0,0
-10,125,incr phi exponent,371,558,54,11,40,3,0,0,-1,0,0,0
-10,126,investment debt term,200,518,55,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,127,126,124,1,0,0,0,0,128,0,-1--1--1,,1|(287,503)|
-10,128,investment utilization term,402,482,50,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,129,128,124,1,0,0,0,0,128,0,-1--1--1,,1|(373,516)|
-1,130,120,110,1,0,0,0,0,128,0,-1--1--1,,1|(509,496)|
-10,131,interest bearing fraction,915,316,48,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,132,131,21,1,0,0,0,0,128,0,-1--1--1,,1|(859,343)|
-10,133,reference debt to gdp level,515,146,55,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,134,133,114,1,0,0,0,0,128,0,-1--1--1,,1|(440,156)|
-10,135,foreign domestic investment gap,182,466,53,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,136,135,124,1,0,0,0,0,128,0,-1--1--1,,1|(270,466)|
-1,137,37,32,1,0,0,0,0,128,0,-1--1--1,,1|(883,182)|
-10,138,gdp,316,48,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,139,138,84,1,0,0,0,0,128,0,-1--1--1,,1|(340,70)|
-1,140,138,33,1,0,0,0,0,128,0,-1--1--1,,1|(421,74)|
-10,141,gdp,751,256,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,142,141,37,1,0,0,0,0,128,0,-1--1--1,,1|(782,233)|
-10,143,D,654,71,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,144,143,33,1,0,0,0,0,128,0,-1--1--1,,1|(601,73)|
-10,145,X,873,66,23,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,146,145,32,1,0,0,0,0,128,0,-1--1--1,,1|(935,82)|
-10,147,marginal change in utilization,417,372,63,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,148,p climate,647,415,29,11,8,3,0,0,0,0,0,0
-10,149,minimum return period,520,425,49,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,150,climate beta,743,381,38,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,151,climate damage,599,367,49,11,8,3,0,0,0,0,0,0
-1,152,149,151,1,0,0,0,0,64,0,-1--1--1,,1|(547,401)|
-1,153,148,151,1,0,0,0,0,64,0,-1--1--1,,1|(625,392)|
-1,154,150,151,1,0,0,0,0,64,0,-1--1--1,,1|(682,364)|
-10,155,rebuild after climate damage,479,358,62,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,156,investment rate,363,242,47,11,8,3,0,0,0,0,0,0
-1,157,31,156,1,0,0,0,0,128,0,-1--1--1,,1|(314,208)|
-1,158,114,156,1,0,0,0,0,128,0,-1--1--1,,1|(388,225)|
-1,159,117,156,1,0,0,0,0,128,0,-1--1--1,,1|(280,277)|
-10,160,phi,192,253,20,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,161,160,156,1,0,0,0,0,128,0,-1--1--1,,1|(257,248)|
-1,162,90,156,0,0,0,0,0,64,0,-1--1--1,,1|(321,202)|
-1,163,151,9,1,0,0,0,0,64,0,-1--1--1,,1|(517,327)|
-1,164,156,9,1,0,0,0,0,64,0,-1--1--1,,1|(391,263)|
-1,165,155,9,1,0,0,0,0,64,0,-1--1--1,,1|(435,335)|
-1,166,151,14,1,0,0,0,0,64,0,-1--1--1,,1|(586,336)|
+10,1,K,521,294,40,20,3,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
+10,2,D,926,432,40,20,3,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
+10,3,initial capital,518,236,39,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
+1,4,3,1,1,0,0,0,0,64,1,-1--1--1,,1|(530,265)|
+12,5,48,345,291,10,8,0,3,0,0,-1,0,0,0
+1,6,8,1,4,0,0,22,0,0,0,-1--1--1,,1|(452,297)|
+1,7,8,5,100,0,0,22,0,0,0,-1--1--1,,1|(383,297)|
+11,8,48,418,297,6,8,34,3,0,0,1,0,0,0
+10,9,investment and rebuilding,418,324,47,19,40,3,0,2,-1,0,0,0,-1--1--1,0-0-0,|12||255-128-0
+12,10,48,639,294,10,8,0,3,0,0,-1,0,0,0
+1,11,13,10,4,0,0,22,0,0,0,-1--1--1,,1|(615,294)|
+1,12,13,1,100,0,0,22,0,0,0,-1--1--1,,1|(575,294)|
+11,13,48,595,294,6,8,34,3,0,0,1,0,0,0
+10,14,depreciation,595,313,39,11,40,3,0,0,-1,0,0,0
+1,15,1,13,1,0,0,0,0,64,0,-1--1--1,,1|(573,255)|
+10,16,depreciation rate,672,342,53,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+1,17,16,14,1,0,0,0,0,64,0,-1--1--1,,1|(603,334)|
+12,18,48,770,434,10,8,0,3,0,0,-1,0,0,0
+1,19,21,2,4,0,0,22,0,0,0,-1--1--1,,1|(862,434)|
+1,20,21,18,100,0,0,22,0,0,0,-1--1--1,,1|(803,434)|
+11,21,48,833,434,6,8,34,3,0,0,1,0,0,0
+10,22,net new loans,833,453,43,11,40,3,0,0,-1,0,0,0
+12,23,48,928,529,10,8,0,3,0,0,-1,0,0,0
+1,24,26,2,4,0,0,22,0,0,0,-1--1--1,,1|(930,466)|
+1,25,26,23,100,0,0,22,0,0,0,-1--1--1,,1|(930,506)|
+11,26,48,930,486,8,6,33,3,0,0,4,0,0,0
+10,27,interest on debt,987,486,49,11,40,3,0,0,-1,0,0,0
+10,28,interest rate on new loans,1328,521,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,29,initial external debt,853,513,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
+1,30,29,2,1,0,0,0,0,64,1,-1--1--1,,1|(886,467)|
+10,31,base investment rate,233,231,50,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,32,net new external liabilities,1003,149,52,19,8,131,0,0,0,0,0,0
+10,33,debt to gdp ratio,501,129,53,11,8,3,0,0,0,0,0,0
+1,34,1,9,1,0,0,0,0,64,0,-1--1--1,,1|(471,259)|
+10,35,coeff id,517,207,25,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,36,coeff iu,114,382,24,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,37,imports,774,208,25,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-128-0
+10,38,coeff my,694,28,28,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,39,price of exports,1012,62,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,40,price of imports,1014,220,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,41,price of consumption,774,238,45,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,42,exchange rate,1022,207,53,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,43,TIME STEP,1488,518,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,44,exchange rate,618,135,53,4,8,130,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,45,44,33,1,0,0,0,0,128,0,-1--1--1,,1|(552,123)|
+10,46,TIME STEP,1006,370,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,47,46,2,0,0,0,0,0,64,0,-1--1--1,,1|(977,392)|
+10,48,average interest rate on debt,1330,454,56,19,3,131,0,0,0,0,0,0
+1,49,28,48,1,0,0,0,0,128,1,-1--1--1,,1|(1335,493)|
+12,50,48,1199,449,10,8,0,3,0,0,-1,0,0,0
+1,51,53,48,4,0,0,22,0,0,0,-1--1--1,,1|(1260,449)|
+1,52,53,50,100,0,0,22,0,0,0,-1--1--1,,1|(1222,449)|
+11,53,48,1241,449,6,8,34,3,0,0,1,0,0,0
+10,54,new interest,1241,468,38,11,40,3,0,0,-1,0,0,0
+1,55,28,54,1,0,0,0,0,128,0,-1--1--1,,1|(1267,509)|
+10,56,D,1329,576,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+12,57,48,1489,455,10,8,0,3,0,0,-1,0,0,0
+1,58,60,57,4,0,0,22,0,0,0,-1--1--1,,1|(1458,455)|
+1,59,60,48,100,0,0,22,0,0,0,-1--1--1,,1|(1406,455)|
+11,60,48,1432,455,6,8,34,3,0,0,1,0,0,0
+10,61,old interest,1432,474,35,11,40,3,0,0,-1,0,0,0
+1,62,56,61,1,0,0,0,0,128,0,-1--1--1,,1|(1389,545)|
+1,63,56,54,1,0,0,0,0,128,0,-1--1--1,,1|(1265,538)|
+1,64,48,60,1,0,0,0,0,128,0,-1--1--1,,1|(1363,420)|
+10,65,average interest rate on debt,1033,535,55,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,66,previous utilization deviation,310,410,58,19,8,3,0,0,0,0,0,0
+10,67,TIME STEP,1425,303,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,68,new debt,1324,342,30,11,8,3,0,0,0,0,0,0
+1,69,68,53,1,0,0,0,0,128,0,-1--1--1,,1|(1260,375)|
+1,70,68,60,1,0,0,0,0,128,0,-1--1--1,,1|(1400,378)|
+10,71,TIME STEP,218,447,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,72,71,66,1,0,0,0,0,128,0,-1--1--1,,1|(273,433)|
+10,73,utilization ratio,129,413,54,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,74,73,66,1,0,0,0,0,128,0,-1--1--1,,1|(214,416)|
+10,75,initial utilization,344,471,56,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,76,75,66,1,0,0,0,0,64,0,-1--1--1,,1|(322,441)|
+10,77,gdp growth rate,369,110,50,11,8,3,0,0,0,0,0,0
+10,78,price of investment,1294,107,39,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,79,40,32,1,0,0,0,0,128,0,-1--1--1,,1|(1014,186)|
+1,80,39,32,1,0,0,0,0,128,0,-1--1--1,,1|(1008,90)|
+10,81,TIME STEP,251,125,41,11,8,3,0,0,-1,0,0,0
+1,82,81,77,1,0,0,0,0,128,0,-1--1--1,,1|(291,130)|
+10,83,smoothed gdp growth rate,283,182,46,19,8,3,0,0,0,0,0,0
+1,84,77,83,1,0,0,0,0,128,0,-1--1--1,,1|(349,147)|
+10,85,gdp growth smoothing,167,143,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+1,86,85,83,1,0,0,0,0,128,0,-1--1--1,,1|(235,160)|
+10,87,exchange rate,792,340,53,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,88,87,22,1,0,0,0,0,64,0,-1--1--1,,1|(803,382)|
+10,89,net new loans,1315,249,52,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,90,89,68,1,0,0,0,0,128,0,-1--1--1,,1|(1344,290)|
+1,91,2,27,1,0,0,0,0,64,0,-1--1--1,,1|(978,439)|
+1,92,65,27,1,0,0,0,0,128,0,-1--1--1,,1|(1049,500)|
+10,93,net saving,1143,103,32,11,8,3,0,0,0,0,0,0
+1,94,32,93,1,0,0,0,0,128,0,-1--1--1,,1|(1081,140)|
+10,95,investment and rebuilding,1215,38,52,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,96,price of investment,1279,89,39,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,97,95,93,1,0,0,0,0,128,0,-1--1--1,,1|(1170,68)|
+1,98,96,93,1,0,0,0,0,128,0,-1--1--1,,1|(1228,117)|
+10,99,net new external liabilities,680,483,57,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,100,99,22,1,0,0,0,0,128,0,-1--1--1,,1|(761,478)|
+10,101,investment debt term,422,229,50,19,8,3,0,0,0,0,0,0
+1,102,33,101,1,0,0,0,0,128,0,-1--1--1,,1|(404,166)|
+1,103,35,101,1,0,0,0,0,128,0,-1--1--1,,1|(466,202)|
+10,104,investment utilization term,233,354,46,19,8,3,0,0,0,0,0,0
+1,105,66,104,1,0,0,0,0,128,0,-1--1--1,,1|(284,378)|
+1,106,36,104,1,0,0,0,0,128,0,-1--1--1,,1|(169,388)|
+10,107,interest bearing fraction,915,333,48,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+1,108,107,21,1,0,0,0,0,128,0,-1--1--1,,1|(859,360)|
+10,109,reference debt to gdp level,515,163,55,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+1,110,109,101,1,0,0,0,0,128,0,-1--1--1,,1|(440,173)|
+1,111,37,32,1,0,0,0,0,128,0,-1--1--1,,1|(883,199)|
+10,112,D,654,88,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,113,112,33,1,0,0,0,0,128,0,-1--1--1,,1|(601,90)|
+10,114,X,873,83,23,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,115,114,32,1,0,0,0,0,128,0,-1--1--1,,1|(935,99)|
+10,116,marginal change in utilization,417,389,63,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,117,p climate,647,432,29,11,8,3,0,0,0,0,0,0
+10,118,minimum return period,520,442,49,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,119,climate beta,743,398,38,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,120,climate damage,599,384,49,11,8,3,0,0,0,0,0,0
+1,121,118,120,1,0,0,0,0,64,0,-1--1--1,,1|(547,418)|
+1,122,117,120,1,0,0,0,0,64,0,-1--1--1,,1|(625,409)|
+1,123,119,120,1,0,0,0,0,64,0,-1--1--1,,1|(682,381)|
+10,124,rebuild after climate damage,479,375,62,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,125,investment rate,363,259,47,11,8,3,0,0,0,0,0,0
+1,126,31,125,1,0,0,0,0,128,0,-1--1--1,,1|(314,225)|
+1,127,101,125,1,0,0,0,0,128,0,-1--1--1,,1|(388,242)|
+1,128,104,125,1,0,0,0,0,128,0,-1--1--1,,1|(280,294)|
+1,129,83,125,0,0,0,0,0,64,0,-1--1--1,,1|(321,219)|
+1,130,120,9,1,0,0,0,0,64,0,-1--1--1,,1|(517,344)|
+1,131,125,9,1,0,0,0,0,64,0,-1--1--1,,1|(391,280)|
+1,132,124,9,1,0,0,0,0,64,0,-1--1--1,,1|(435,352)|
+1,133,120,14,1,0,0,0,0,64,0,-1--1--1,,1|(586,353)|
+10,134,gdp,295,50,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,135,134,33,1,0,0,0,0,128,0,-1--1--1,,1|(381,59)|
+1,136,134,77,1,0,0,0,0,128,0,-1--1--1,,1|(353,73)|
+10,137,gdp,714,264,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,138,137,37,1,0,0,0,0,128,0,-1--1--1,,1|(757,238)|
+10,139,GDP price level,579,48,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,140,139,33,1,0,0,0,0,128,0,-1--1--1,,1|(537,75)|
+10,141,GDP price level,860,261,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,142,141,37,1,0,0,0,0,128,0,-1--1--1,,1|(839,226)|
+10,143,domestic price of imports,841,137,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,144,import elasticity,832,29,49,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,145,adj coeff my,714,104,40,11,8,3,0,0,0,0,0,0
+1,146,144,145,1,0,0,0,0,128,0,-1--1--1,,1|(744,93)|
+10,147,price of consumption,646,195,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,148,147,145,1,0,0,0,0,128,0,-1--1--1,,1|(716,169)|
+1,149,143,145,1,0,0,0,0,128,0,-1--1--1,,1|(774,141)|
+10,150,price of imports,774,238,59,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,151,38,145,1,0,0,0,0,128,0,-1--1--1,,1|(712,60)|
+1,152,145,37,0,0,0,0,0,64,0,-1--1--1,,1|(740,149)|
+1,153,143,37,1,0,0,0,0,128,0,-1--1--1,,1|(821,169)|
 \\\---/// Sketch information - do not modify anything except names
 V300  Do not put anything below this section - it will be ignored
 *prices
 $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
-10,1,price of exports,313,93,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,2,price of imports,604,90,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,3,exchange rate,748,95,44,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,4,price of consumption,444,91,41,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,5,price of investment,970,95,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,6,price level of gdp,1130,94,54,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,1,price of exports,582,145,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,2,price of imports,564,72,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,3,exchange rate,750,99,44,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,4,price of investment,929,82,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,5,consumer price inflation,346,286,46,27,3,131,0,0,0,0,0,0
+10,6,initial consumer price inflation,342,379,49,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
+1,7,6,5,1,0,0,0,0,128,1,-1--1--1,,1|(335,338)|
+12,8,48,150,288,10,8,0,3,0,0,-1,0,0,0
+1,9,11,5,4,0,0,22,0,0,0,-1--1--1,,1|(268,288)|
+1,10,11,8,100,0,0,22,0,0,0,-1--1--1,,1|(192,288)|
+11,11,48,230,288,6,8,34,3,0,0,1,0,0,0
+10,12,change in consumer price inflation,230,315,62,19,40,3,0,0,-1,0,0,0
+10,13,consumer price inflation constant,179,206,53,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+1,14,13,11,1,0,0,0,0,128,0,-1--1--1,,1|(215,243)|
+10,15,consumer price inflation autoregressive coeff,116,393,75,19,8,3,0,0,0,0,0,0
+1,16,15,12,1,0,0,0,0,128,0,-1--1--1,,1|(195,363)|
+10,17,gdp per capita gr,327,196,51,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,18,17,12,1,0,0,0,0,128,0,-1--1--1,,1|(266,218)|
+10,19,consumer price inflation gdp pc growth coefficient,272,467,81,19,8,3,0,0,0,0,0,0
+1,20,19,12,1,0,0,0,0,128,0,-1--1--1,,1|(259,408)|
+1,21,5,11,1,0,0,0,0,128,0,-1--1--1,,1|(290,242)|
+10,22,price of consumption,600,273,47,29,3,131,0,0,0,0,0,0
+10,23,initial price of consumption,594,372,43,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
+1,24,23,22,1,0,0,0,0,128,1,-1--1--1,,1|(619,330)|
+12,25,48,447,276,10,8,0,3,0,0,-1,0,0,0
+1,26,28,22,4,0,0,22,0,0,0,-1--1--1,,1|(532,276)|
+1,27,28,25,100,0,0,22,0,0,0,-1--1--1,,1|(478,276)|
+11,28,48,505,276,6,8,34,3,0,0,1,0,0,0
+10,29,inflation cpi,505,295,36,11,40,3,0,0,-1,0,0,0
+1,30,5,28,1,0,0,0,0,128,0,-1--1--1,,1|(426,233)|
+1,31,22,28,1,0,0,0,0,128,0,-1--1--1,,1|(540,234)|
+10,32,domestic price of exports,735,173,55,19,8,3,0,0,-1,0,0,0
+1,33,3,32,1,0,0,0,0,64,0,-1--1--1,,1|(753,127)|
+1,34,1,32,1,0,0,0,0,64,0,-1--1--1,,1|(646,167)|
+10,35,domestic price of imports,735,37,55,19,8,3,0,0,-1,0,0,0
+1,36,3,35,1,0,0,0,0,64,0,-1--1--1,,1|(746,74)|
+1,37,2,35,1,0,0,0,0,64,0,-1--1--1,,1|(635,43)|
 \\\---/// Sketch information - do not modify anything except names
 V300  Do not put anything below this section - it will be ignored
 *population dynamics
@@ -729,8 +893,8 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 1,18,11,15,1,0,0,0,0,128,0,-1--1--1,,1|(235,38)|
 10,19,initial utilization,402,49,47,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
 1,20,19,11,1,0,0,0,0,128,1,-1--1--1,,1|(338,29)|
-10,21,gdp,156,206,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,22,21,2,1,0,0,0,0,128,0,-1--1--1,,1|(204,228)|
+10,21,gdp,148,223,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,22,21,2,1,0,0,0,0,128,0,-1--1--1,,1|(193,239)|
 \\\---/// Sketch information - do not modify anything except names
 V300  Do not put anything below this section - it will be ignored
 *exports
@@ -757,77 +921,225 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 V300  Do not put anything below this section - it will be ignored
 *gdp
 $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
-10,1,marginal expenditure on domestic goods,295,197,66,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,2,production determinant,209,81,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,3,common multiplier,391,86,57,11,8,131,0,0,0,0,0,0
-1,4,1,3,1,0,0,0,0,128,0,-1--1--1,,1|(354,144)|
-1,5,2,3,1,0,0,0,0,128,0,-1--1--1,,1|(305,61)|
-10,6,minimum consumption level,278,269,57,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,7,N,435,302,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,8,real basic consumption,448,212,41,19,8,3,0,0,0,0,0,0
-1,9,1,8,1,0,0,0,0,128,0,-1--1--1,,1|(377,208)|
-1,10,6,8,1,0,0,0,0,128,0,-1--1--1,,1|(373,251)|
-1,11,7,8,1,0,0,0,0,128,0,-1--1--1,,1|(456,268)|
-10,12,price level of gdp,925,57,46,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,13,price of consumption,967,149,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,14,price of exports,761,26,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,15,px norm,778,79,27,11,8,3,0,0,0,0,0,0
-10,16,pd norm,826,115,28,11,8,3,0,0,0,0,0,0
-1,17,12,16,1,0,0,0,0,128,0,-1--1--1,,1|(901,102)|
-1,18,12,15,1,0,0,0,0,128,0,-1--1--1,,1|(853,52)|
-1,19,14,15,1,0,0,0,0,128,0,-1--1--1,,1|(750,48)|
-1,20,13,16,1,0,0,0,0,128,0,-1--1--1,,1|(903,150)|
-10,21,gdp basic consumption direct,642,334,60,19,8,3,0,0,0,0,0,0
-1,22,16,21,1,0,0,0,0,128,0,-1--1--1,,1|(787,236)|
-1,23,8,21,1,0,0,0,0,128,0,-1--1--1,,1|(548,287)|
-10,24,gdp exports direct,660,62,57,11,8,3,0,0,0,0,0,0
-1,25,15,24,1,0,0,0,0,128,0,-1--1--1,,1|(714,87)|
-10,26,wage share domestic,539,159,36,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,27,wage share export,738,159,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,28,gdp exports indirect,559,90,39,19,8,3,0,0,0,0,0,0
-10,29,gdp basic consumption indirect,614,220,66,19,8,3,0,0,0,0,0,0
-1,30,3,28,1,0,0,0,0,128,0,-1--1--1,,1|(470,101)|
-1,31,3,29,1,0,0,0,0,128,0,-1--1--1,,1|(473,171)|
-1,32,8,29,1,0,0,0,0,128,0,-1--1--1,,1|(516,222)|
-1,33,27,29,1,0,0,0,0,128,0,-1--1--1,,1|(715,191)|
-1,34,26,28,1,0,0,0,0,128,0,-1--1--1,,1|(543,129)|
-1,35,26,29,1,0,0,0,0,128,0,-1--1--1,,1|(567,188)|
-1,36,27,28,1,0,0,0,0,128,0,-1--1--1,,1|(640,117)|
-10,37,gdp coeff xd,385,36,40,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,38,gdp coeff xx,485,28,40,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,39,37,28,1,0,0,0,0,128,0,-1--1--1,,1|(463,59)|
-1,40,38,28,1,0,0,0,0,128,0,-1--1--1,,1|(524,57)|
-10,41,gdp coeff nd,586,271,40,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-10,42,gdp coeff nx,691,271,40,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,43,41,29,1,0,0,0,0,128,0,-1--1--1,,1|(588,249)|
-1,44,42,29,1,0,0,0,0,128,0,-1--1--1,,1|(656,250)|
-1,45,16,28,1,0,0,0,0,64,0,-1--1--1,,1|(702,111)|
-1,46,15,28,1,0,0,0,0,64,0,-1--1--1,,1|(681,93)|
-1,47,15,29,1,0,0,0,0,128,0,-1--1--1,,1|(668,156)|
-1,48,16,29,1,0,0,0,0,128,0,-1--1--1,,1|(756,207)|
-10,49,X prod,573,23,33,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,50,49,28,1,0,0,0,0,128,0,-1--1--1,,1|(562,45)|
-1,51,49,24,1,0,0,0,0,128,0,-1--1--1,,1|(629,43)|
-10,52,gdp,663,481,14,11,8,3,0,0,0,0,0,0
-10,53,X prod,334,509,24,11,8,3,0,0,0,0,0,0
-10,54,X prod smoothing,257,473,57,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
-1,55,54,53,1,0,0,0,0,128,0,-1--1--1,,1|(299,498)|
-10,56,init X prod,392,455,35,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0
-1,57,56,53,1,0,0,0,0,128,0,-1--1--1,,1|(360,477)|
-10,58,gdp basic consumption direct,584,429,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,59,gdp basic consumption indirect,755,424,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,60,gdp exports direct,564,528,43,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,61,gdp exports indirect,735,524,43,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,62,60,52,1,0,0,0,0,128,0,-1--1--1,,1|(578,503)|
-1,63,58,52,1,0,0,0,0,128,0,-1--1--1,,1|(604,459)|
-1,64,59,52,1,0,0,0,0,128,0,-1--1--1,,1|(710,461)|
-1,65,61,52,1,0,0,0,0,128,0,-1--1--1,,1|(707,491)|
-10,66,X,311,561,23,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-1,67,66,53,1,0,0,0,0,128,0,-1--1--1,,1|(335,532)|
-10,68,N,991,471,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
-10,69,gdp per capita,832,470,46,11,8,3,0,0,0,0,0,0
-1,70,52,69,1,0,0,0,0,128,0,-1--1--1,,1|(733,469)|
-1,71,68,69,1,0,0,0,0,128,0,-1--1--1,,1|(936,486)|
+10,1,marginal expenditure on domestic goods,131,289,66,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,2,production determinant,844,366,37,19,8,3,0,0,0,0,0,0
+10,3,minimum consumption level,133,471,57,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,4,N,218,433,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,5,real basic consumption,290,484,41,19,8,3,0,0,0,0,0,0
+1,6,3,5,1,0,0,0,0,128,0,-1--1--1,,1|(216,488)|
+1,7,4,5,1,0,0,0,0,128,0,-1--1--1,,1|(238,466)|
+10,8,price of consumption,1079,65,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,9,gdp basic consumption direct,373,544,60,19,8,3,0,0,0,0,0,0
+1,10,5,9,1,0,0,0,0,128,0,-1--1--1,,1|(335,518)|
+10,11,gdp exports direct,309,657,57,11,8,3,0,0,0,0,0,0
+10,12,wage share domestic,717,198,36,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,13,wage share export,752,144,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255
+10,14,gdp,430,715,14,11,8,3,0,0,0,0,0,0
+10,15,Wage bill smoothed,912,282,40,20,3,3,0,0,0,0,0,0
+12,16,48,695,288,10,8,0,3,0,0,-1,0,0,0
+1,17,19,15,4,0,0,22,0,0,0,-1--1--1,,1|(833,288)|
+1,18,19,16,100,0,0,22,0,0,0,-1--1--1,,1|(743,288)|
+11,19,48,788,288,6,8,34,3,0,0,1,0,0,0
+10,20,wages export contribution,788,315,43,19,40,3,0,0,-1,0,0,0
+12,21,48,903,120,10,8,0,3,0,0,-1,0,0,0
+1,22,24,15,4,0,0,22,0,0,0,-1--1--1,,1|(903,231)|
+1,23,24,21,100,0,0,22,0,0,0,-1--1--1,,1|(903,158)|
+11,24,48,903,195,8,6,33,3,0,0,4,0,0,0
+10,25,wages basic consumption contribution,952,195,41,28,40,3,0,0,-1,0,0,0
+12,26,48,908,444,10,8,0,3,0,0,-1,0,0,0
+1,27,29,15,4,0,0,22,0,0,0,-1--1--1,,1|(908,338)|
+1,28,29,26,100,0,0,22,0,0,0,-1--1--1,,1|(908,411)|
+11,29,48,908,381,8,6,33,3,0,0,4,0,0,0
+10,30,wages smoothing contribution,971,381,55,19,40,3,0,0,-1,0,0,0
+10,31,wage smoothing,1180,317,51,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255
+1,32,31,15,1,0,0,0,0,128,0,-1--1--1,,1|(1014,330)|
+10,33,TIME STEP,1351,241,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,34,real basic consumption,1070,171,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,35,34,25,1,0,0,0,0,128,0,-1--1--1,,1|(1015,194)|
+1,36,13,24,1,0,0,0,0,128,0,-1--1--1,,1|(807,173)|
+1,37,13,19,1,0,0,0,0,128,0,-1--1--1,,1|(793,222)|
+1,38,12,19,1,0,0,0,0,128,0,-1--1--1,,1|(770,213)|
+1,39,12,24,1,0,0,0,0,128,0,-1--1--1,,1|(826,206)|
+10,40,domestic price of exports,653,385,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,41,40,20,1,0,0,0,0,128,0,-1--1--1,,1|(727,370)|
+10,42,domestic price of exports,1096,123,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,43,42,25,1,0,0,0,0,128,0,-1--1--1,,1|(1018,158)|
+1,44,8,25,1,0,0,0,0,128,0,-1--1--1,,1|(1028,104)|
+10,45,price of consumption,648,431,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,46,45,20,1,0,0,0,0,128,0,-1--1--1,,1|(746,393)|
+10,47,marginal expenditure on domestic goods,1337,121,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,48,init smoothed wage bill,1047,240,43,19,8,3,0,0,-1,0,0,0
+1,49,48,15,1,0,0,0,0,64,1,-1--1--1,,1|(971,248)|
+10,50,domestic price of exports,143,689,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,51,50,11,1,0,0,0,0,128,0,-1--1--1,,1|(225,653)|
+10,52,marginal expenditure on domestic goods,480,470,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,53,price of consumption,205,559,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,54,53,9,1,0,0,0,0,128,0,-1--1--1,,1|(295,585)|
+10,55,gdp indirect,549,611,38,11,8,3,0,0,0,0,0,0
+10,56,Wage bill smoothed,554,685,36,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,57,56,55,1,0,0,0,0,128,0,-1--1--1,,1|(559,647)|
+1,58,52,55,1,0,0,0,0,128,0,-1--1--1,,1|(530,527)|
+10,59,X,306,727,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,60,59,11,1,0,0,0,0,128,0,-1--1--1,,1|(317,694)|
+10,61,X,657,343,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,62,61,20,1,0,0,0,0,128,0,-1--1--1,,1|(704,350)|
+10,63,q,386,155,6,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255
+10,64,tech coeff xd,356,76,41,11,8,131,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255
+10,65,tech coeff dx,384,409,41,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255
+10,66,z,1254,262,5,11,8,3,0,0,0,0,0,0
+1,67,33,66,1,0,0,0,0,128,0,-1--1--1,,1|(1272,250)|
+1,68,31,66,1,0,0,0,0,128,0,-1--1--1,,1|(1220,306)|
+10,69,c x,433,175,11,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255
+10,70,c d,568,197,12,11,8,3,0,0,0,0,0,0
+1,71,69,70,1,0,0,0,0,128,0,-1--1--1,,1|(479,200)|
+10,72,A xx,377,247,17,11,8,3,0,0,0,0,0,0
+10,73,z,618,59,14,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,74,63,72,1,0,0,0,0,128,0,-1--1--1,,1|(376,190)|
+10,75,theta,321,194,17,11,8,3,0,0,-1,0,0,0
+1,76,75,72,1,0,0,0,0,128,0,-1--1--1,,1|(351,234)|
+10,77,wage share export,559,256,41,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,78,marginal expenditure on domestic goods,478,304,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,79,78,72,1,0,0,0,0,128,0,-1--1--1,,1|(420,260)|
+1,80,69,72,1,0,0,0,0,64,0,-1--1--1,,1|(402,202)|
+10,81,A dd,638,134,18,11,8,3,0,0,0,0,0,0
+1,82,73,81,1,0,0,0,0,128,0,-1--1--1,,1|(649,91)|
+1,83,70,81,1,0,0,0,0,128,0,-1--1--1,,1|(600,182)|
+1,84,77,72,1,0,0,0,0,128,0,-1--1--1,,1|(468,217)|
+10,85,wage share domestic,569,91,41,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,86,85,81,1,0,0,0,0,128,0,-1--1--1,,1|(598,90)|
+10,87,A xd,463,69,17,11,8,3,0,0,0,0,0,0
+10,88,A dx,457,365,17,11,8,3,0,0,0,0,0,0
+1,89,64,87,1,0,0,0,0,128,0,-1--1--1,,1|(397,62)|
+1,90,75,87,1,0,0,0,0,128,0,-1--1--1,,1|(371,128)|
+1,91,73,87,1,0,0,0,0,128,0,-1--1--1,,1|(544,47)|
+1,92,63,87,1,0,0,0,0,128,0,-1--1--1,,1|(420,112)|
+1,93,69,87,1,0,0,0,0,128,0,-1--1--1,,1|(437,117)|
+1,94,85,87,1,0,0,0,0,128,0,-1--1--1,,1|(510,77)|
+1,95,65,88,1,0,0,0,0,128,0,-1--1--1,,1|(439,395)|
+1,96,75,88,1,0,0,0,0,128,0,-1--1--1,,1|(326,333)|
+1,97,70,88,1,0,0,0,0,128,0,-1--1--1,,1|(607,337)|
+1,98,78,88,1,0,0,0,0,128,0,-1--1--1,,1|(473,339)|
+1,99,77,88,1,0,0,0,0,128,0,-1--1--1,,1|(558,300)|
+10,100,A xx,755,421,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,101,A dd,800,437,27,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,102,A xd,874,457,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,103,A dx,848,430,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,104,100,2,1,0,0,0,0,128,0,-1--1--1,,1|(783,401)|
+1,105,102,2,1,0,0,0,0,128,0,-1--1--1,,1|(880,428)|
+1,106,103,2,1,0,0,0,0,128,0,-1--1--1,,1|(849,409)|
+1,107,101,2,1,0,0,0,0,128,0,-1--1--1,,1|(810,416)|
+10,108,Omega,1246,205,24,11,8,3,0,0,0,0,0,0
+1,109,66,108,1,0,0,0,0,128,0,-1--1--1,,1|(1257,241)|
+1,110,15,108,1,0,0,0,0,128,0,-1--1--1,,1|(1170,280)|
+1,111,34,108,1,0,0,0,0,128,0,-1--1--1,,1|(1166,176)|
+1,112,8,108,1,0,0,0,0,128,0,-1--1--1,,1|(1205,111)|
+1,113,47,108,1,0,0,0,0,128,0,-1--1--1,,1|(1286,161)|
+10,114,A dd,665,240,27,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,115,A dx,665,311,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,116,114,19,1,0,0,0,0,128,0,-1--1--1,,1|(707,238)|
+1,117,115,20,1,0,0,0,0,128,0,-1--1--1,,1|(718,326)|
+10,118,A xx,831,81,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,119,A xd,920,77,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,120,118,24,1,0,0,0,0,128,0,-1--1--1,,1|(836,119)|
+1,121,119,25,1,0,0,0,0,128,0,-1--1--1,,1|(938,120)|
+10,122,c d,1116,471,21,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,123,c x,1134,494,20,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,124,theta,1196,510,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,125,9,55,1,0,0,0,0,128,0,-1--1--1,,1|(454,543)|
+10,126,GDP price level,929,708,40,20,3,3,0,0,0,0,0,0
+12,127,48,753,713,10,8,0,3,0,0,-1,0,0,0
+1,128,130,126,4,0,0,22,0,0,0,-1--1--1,,1|(860,713)|
+1,129,130,127,100,0,0,22,0,0,0,-1--1--1,,1|(791,713)|
+11,130,48,826,713,6,8,34,3,0,0,1,0,0,0
+10,131,gdp price increase,826,732,57,11,40,3,0,0,-1,0,0,0
+10,132,gr domestic price of exports,746,588,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,133,gr price of consumption,919,598,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,134,gdp price inflation,850,648,56,11,8,3,0,0,0,0,0,0
+1,135,132,134,1,0,0,0,0,128,0,-1--1--1,,1|(779,613)|
+1,136,133,134,1,0,0,0,0,128,0,-1--1--1,,1|(881,610)|
+1,137,134,130,1,0,0,0,0,128,0,-1--1--1,,1|(831,669)|
+1,138,126,130,1,0,0,0,0,128,0,-1--1--1,,1|(885,675)|
+10,139,initial gdp price level,980,784,48,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-128-0
+1,140,139,126,1,0,0,0,0,128,1,-1--1--1,,1|(943,757)|
+10,141,exports as a share of gdp,1133,675,58,19,8,3,0,0,0,0,0,0
+10,142,gdp exports direct,1242,627,43,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,143,142,141,1,0,0,0,0,128,0,-1--1--1,,1|(1168,639)|
+10,144,c x,685,627,20,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,145,c d,686,668,21,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,146,144,134,1,0,0,0,0,128,0,-1--1--1,,1|(731,626)|
+1,147,145,134,1,0,0,0,0,128,0,-1--1--1,,1|(728,672)|
+10,148,q,841,559,15,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,149,148,134,1,0,0,0,0,128,0,-1--1--1,,1|(835,595)|
+10,150,TIME STEP,546,765,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,151,150,14,0,0,0,0,0,64,0,-1--1--1,,1|(488,740)|
+10,152,gdp nominal,410,611,39,11,8,3,0,0,0,0,0,0
+1,153,152,14,1,0,0,0,0,128,0,-1--1--1,,1|(410,662)|
+1,154,55,152,1,0,0,0,0,128,0,-1--1--1,,1|(469,641)|
+1,155,11,152,1,0,0,0,0,128,0,-1--1--1,,1|(343,632)|
+1,156,9,152,1,0,0,0,0,128,0,-1--1--1,,1|(398,573)|
+10,157,gdp nominal,1220,731,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,158,157,141,1,0,0,0,0,128,0,-1--1--1,,1|(1164,721)|
+10,159,init wage basic cons mult,1155,224,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-128-0
+1,160,159,48,1,0,0,0,0,128,0,-1--1--1,,1|(1102,256)|
+10,161,z,384,315,14,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,162,161,88,1,0,0,0,0,128,0,-1--1--1,,1|(415,341)|
+1,163,161,72,1,0,0,0,0,128,0,-1--1--1,,1|(375,284)|
+10,164,q,1086,451,15,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,165,marginal expenditure on domestic goods,523,145,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,166,165,87,1,0,0,0,0,128,0,-1--1--1,,1|(475,101)|
+1,167,165,81,1,0,0,0,0,128,0,-1--1--1,,1|(600,148)|
+10,168,wages smoothing contribution x,1202,410,55,19,8,3,0,0,0,0,0,0
+10,169,wages smoothing contribution d,984,503,55,19,8,3,0,0,0,0,0,0
+10,170,A dd,1312,313,27,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,171,A xd,1322,342,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,172,170,168,1,0,0,0,0,128,0,-1--1--1,,1|(1272,344)|
+1,173,171,168,1,0,0,0,0,128,0,-1--1--1,,1|(1274,378)|
+1,174,164,168,1,0,0,0,0,128,0,-1--1--1,,1|(1121,441)|
+1,175,164,169,1,0,0,0,0,128,0,-1--1--1,,1|(1045,473)|
+1,176,124,168,1,0,0,0,0,128,0,-1--1--1,,1|(1207,479)|
+1,177,124,169,1,0,0,0,0,128,0,-1--1--1,,1|(1105,528)|
+10,178,A xx,801,526,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,179,A dx,818,499,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,180,178,169,1,0,0,0,0,128,0,-1--1--1,,1|(875,525)|
+1,181,179,169,1,0,0,0,0,128,0,-1--1--1,,1|(884,490)|
+10,182,domestic price of exports,1334,447,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,183,182,168,0,0,0,0,0,64,0,-1--1--1,,1|(1272,430)|
+1,184,122,168,1,0,0,0,0,128,0,-1--1--1,,1|(1152,454)|
+1,185,123,168,1,0,0,0,0,128,0,-1--1--1,,1|(1175,469)|
+1,186,168,30,1,0,0,0,0,128,0,-1--1--1,,1|(1031,411)|
+10,187,price of consumption,1017,568,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,188,187,169,0,0,0,0,0,64,0,-1--1--1,,1|(1003,541)|
+1,189,122,169,1,0,0,0,0,128,0,-1--1--1,,1|(1065,489)|
+1,190,123,169,1,0,0,0,0,128,0,-1--1--1,,1|(1043,511)|
+1,191,169,30,1,0,0,0,0,128,0,-1--1--1,,1|(966,431)|
+10,192,wage share export,1343,383,41,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,193,192,168,1,0,0,0,0,128,0,-1--1--1,,1|(1284,405)|
+10,194,wage share domestic,1152,552,41,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,195,194,169,1,0,0,0,0,128,0,-1--1--1,,1|(1070,552)|
+10,196,Omega,1021,438,33,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,197,196,30,1,0,0,0,0,128,0,-1--1--1,,1|(999,423)|
+12,198,48,1065,284,10,8,0,3,0,0,-1,0,0,0
+1,199,201,198,4,0,0,22,0,0,0,-1--1--1,,1|(1038,284)|
+1,200,201,15,100,0,0,22,0,0,0,-1--1--1,,1|(981,284)|
+11,201,48,1016,284,6,8,34,3,0,0,1,0,0,0
+10,202,wage bill delay,1016,303,47,11,40,3,0,0,-1,0,0,0
+1,203,15,201,1,0,0,0,0,128,0,-1--1--1,,1|(989,271)|
+1,204,34,48,1,0,0,0,0,128,0,-1--1--1,,1|(1047,210)|
+1,205,2,15,1,0,0,0,0,128,0,-1--1--1,,1|(848,339)|
+10,206,N,379,850,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,207,gdp per capita,442,805,46,11,8,3,0,0,0,0,0,0
+1,208,206,207,1,0,0,0,0,128,0,-1--1--1,,1|(402,832)|
+10,209,gdp per capita gr,603,829,54,11,8,3,0,0,0,0,0,0
+1,210,207,209,1,0,0,0,0,128,0,-1--1--1,,1|(505,827)|
+1,211,14,207,1,0,0,0,0,128,0,-1--1--1,,1|(430,755)|
+1,212,150,209,1,0,0,0,0,128,0,-1--1--1,,1|(571,782)|
+1,213,141,134,1,0,0,0,0,128,0,-1--1--1,,1|(1033,655)|
+10,214,GDP price level,292,782,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,215,214,14,1,0,0,0,0,128,0,-1--1--1,,1|(352,744)|
+10,216,domestic price of exports,226,121,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,217,216,75,1,0,0,0,0,0,0,-1--1--1,,1|(285,150)|
+10,218,price of consumption,171,183,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,219,218,75,1,0,0,0,0,0,0,-1--1--1,,1|(250,202)|
 ///---\\\
 :GRAPH D_calib
 :TITLE Debt Calibration
@@ -867,14 +1179,16 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 8:scenario_graphs.vgd
 9:Scenario stochastic
 30:?params=GLCS_two_sector_parameters.xlsx
+11:GLCS_two_sector.voc
+12:GLCS_two_sector.vpd
 18:GLCS_two_sector.vsc
 20:GLCS_two_sector.lst
 15:1,0,0,0,0,0
-19:100,0
+19:100,5
 27:0,
 34:0,
 4:Time
-5:gdp[scenario]
+5:X[scenario]
 35:Year
 36:YYYY
 37:0
@@ -886,6 +1200,7 @@ $192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,1
 24:1950
 25:2055
 26:2055
+6:CS1
 6:CS2
 6:CS3
 6:CS4
