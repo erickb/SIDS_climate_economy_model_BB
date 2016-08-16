@@ -16,7 +16,10 @@
 		a) Open Windows explorer
 		b) Keep right-clicking and choosing "Refresh" from the context menu
 		c) When the file size of results.tab stops changing, you're done
+	4. Double-click on this file (calc_stats.py)
 	
+	The results will be written to several files with a ".tab" ending. These are tab-delimited files that can
+	be read into Excel. They include "mean.tab", "min.tab", "max.tab", "q25.tab", "q50.tab" and "q75.tab"
 
 """
 def sign(x):
