@@ -1,0 +1,2051 @@
+{UTF-8}
+net new external liabilities=
+	nominal imports  - nominal exports  - net remittance inflows - net CCRIF payout in BBD
+	~	
+	~		|
+
+net saving=
+	nominal investment - net new external liabilities
+	~	
+	~		|
+
+nominal intermediate imports=
+	domestic price of imports * SUM(intermediate imports coeff[sector!] * total output[sector\
+		!])
+	~	
+	~		|
+
+net remittance inflows=
+	personal remittances - remitted profits
+	~	
+	~		|
+
+rebuilding[vintage]=
+	min(SUM(Rebuilding backlog[vintage!]), max rebuilding fraction of GDP * gdp * GDP price level\
+		/domestic price of investment) * ZIDZ(Rebuilding backlog
+	[vintage],SUM(Rebuilding backlog[vintage!]))
+	~	
+	~		|
+
+net CCRIF payout in BBD=
+	exchange rate * (CCRIF payout - CCRIF annual premium)
+	~	
+	~		|
+
+xr eqm nominal import of consumer goods=
+	nominal exports - nominal intermediate imports - domestic saving target rate * gdp nominal\
+		 + net remittance inflows + net CCRIF payout in BBD
+	~	
+	~		|
+
+export growth rate=
+	RANDOM NORMAL(-0.5, 0.5 , export growth rate world gdp coeff * world gdp gr  , export growth rate standard deviation\
+		  , 0)
+	~	
+	~		|
+
+tourism xr coeff=
+	GET DIRECT CONSTANTS('?params', '' , 'B65')
+	~	
+	~		|
+
+source country gdp gr[tourism source]=
+	source country gdp gr const[tourism source] + source country gdp gr own lag 1[tourism source\
+		] * delay 1 source country gdp gr[tourism source
+	] + source country gdp gr world[tourism source] * world gdp gr + source country grp gr world lag 1\
+		[tourism source
+	] * delay 1 world gdp gr + RANDOM NORMAL(-1, 1 , 0 , source country gdp gr sd[tourism source\
+		] , 0)
+	~	
+	~		|
+
+source country gdp gr const[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B74' )
+	~	
+	~		|
+
+final demand[export]=
+	X + consumption share[export] * Omega ~~|
+final demand[domestic]=
+	real basic consumption  + consumption share[domestic] * Omega
+	~	
+	~		|
+
+source country gdp gr sd[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B78' )
+	~	
+	~		|
+
+source country gdp gr world[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B76' )
+	~	
+	~		|
+
+gdp exports direct=
+	X  * domestic prices[export]
+	~	
+	~		|
+
+max depth of recession:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B86' )
+	~	
+	~		|
+
+delay 1 normal model world gdp gr=
+	DELAY FIXED( normal model world gdp gr , 1 , init world gdp gr )
+	~	
+	~		|
+
+mean depth of recession:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B85' )
+	~	
+	~		|
+
+CCRIF annual premium:=
+	GET DIRECT DATA('?params', '', '13', 'B94')
+	~	
+	~		|
+
+CCRIF attachment:=
+	GET DIRECT DATA('?params', '', '13', 'B96')
+	~	
+	~		|
+
+CCRIF exhaustion:=
+	GET DIRECT DATA('?params', '', '13', 'B97')
+	~	
+	~		|
+
+CCRIF maximum payout:=
+	GET DIRECT DATA('?params', '', '13', 'B95')
+	~	
+	~		|
+
+CCRIF payout=
+	IF THEN ELSE(wind BRB < CCRIF attachment, 0, IF THEN ELSE(wind BRB > CCRIF exhaustion\
+		, CCRIF maximum payout, CCRIF maximum payout * ((wind BRB - CCRIF attachment)/(CCRIF exhaustion\
+		 - CCRIF attachment))^wind damage exponent))
+	~	
+	~		|
+
+recession probability:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B84' )
+	~	
+	~		|
+
+GEV uniform rand=
+	IF THEN ELSE(hurricane season = 1, RANDOM UNIFORM(0,1,0), 1e-09)
+	~	
+	~		|
+
+global climate damage fraction=
+	DICE a1 * T anomaly + DICE a2 * T anomaly^DICE a3
+	~	
+	~		|
+
+change in non tourist exports=
+	export growth rate  * X excl tourism
+	~	
+	~		|
+
+gr of tourism weighted real exchange rate=
+	tourism weighted real exchange rate/SMOOTH(tourism weighted real exchange rate, 1) -\
+		 1
+	~	
+	~		|
+
+climate damage impact on global growth=
+	-(global climate damage fraction - SMOOTH(global climate damage fraction,1))/(1 - global climate damage fraction\
+		)
+	~	
+	~		|
+
+tourism expenditure gr=
+	IF THEN ELSE(tourist season = 1, tourism source country gdp coeff * tourism weighted source country gdp gr\
+		 + tourism hurricane coeff * hurricane dummy + tourism xr coeff * gr of tourism weighted real exchange rate
+	+ tourism airlines coeff * growth in number of airlines, 0)
+	~	
+	~		|
+
+hurricane dummy=
+	DELAY FIXED(hurricane occurrence, 0.5 , 0 )
+	~	
+	~		|
+
+normal model world gdp gr=
+	mean world gdp gr + world gdp gr lag 1 coeff * (delay 1 normal model world gdp gr - \
+		mean world gdp gr) + RANDOM NORMAL(-1 , 1 , 0 , world gdp gr sd, 0)
+	~	
+	~		|
+
+hurricane season=
+	IF THEN ELSE(MODULO(Time, 1) = 0.5, 1, 0)
+	~	
+	~		|
+
+real exchange rate[tourism source]=
+	exchange rate * price of consumption/source country price level[tourism source]
+	~	
+	~		|
+
+tourism weighted real exchange rate=
+	SUM(tourism source country share[tourism source!] * real exchange rate[tourism source\
+		!])
+	~	
+	~		|
+
+tourism weighted source country gdp gr=
+	SUM(tourism source country share[tourism source!] * source country gdp gr[tourism source\
+		!])
+	~	
+	~		|
+
+recession=
+	IF THEN ELSE(RANDOM UNIFORM(0, 1 , 0) <= 1 - (1 - recession probability)^TIME STEP, \
+		-RANDOM EXPONENTIAL(0, max depth of recession
+	 , 0 , mean depth of recession , 0 ), 0)
+	~	
+	~		|
+
+tourist expenditure= INTEG (
+	tourist expenditure * tourism expenditure gr/TIME STEP,
+		init tourist expenditure)
+	~	
+	~	Note that this is an annual growth rate calculated once per year, but is \
+		applied at on quarter.
+	|
+
+tourist season=
+	IF THEN ELSE(MODULO(Time, 1) = 0, 1, 0)
+	~	
+	~		|
+
+init source country gdp gr[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B79' )
+	~	
+	~		|
+
+init tourist expenditure=
+	GET DIRECT CONSTANTS('?params', '', 'B12')
+	~	
+	~		|
+
+world gdp gr=
+	normal model world gdp gr + recession + climate damage impact on global growth
+	~	
+	~		|
+
+source country grp gr world lag 1[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B77' )
+	~	
+	~		|
+
+init world gdp gr=
+	0.02
+	~	
+	~		|
+
+X=
+	X excl tourism + tourist expenditure/domestic price of exports
+	~	
+	~		|
+
+delay 1 source country gdp gr[tourism source]= DELAY FIXED (
+	source country gdp gr[tourism source], 1 , init source country gdp gr[tourism source\
+		])
+	~	
+	~		|
+
+delay 1 world gdp gr=
+	DELAY FIXED(world gdp gr, 1 , init world gdp gr )
+	~	
+	~		|
+
+SST to T coeff=
+	GET DIRECT CONSTANTS('?params', '' , 'B89' )
+	~	
+	~		|
+
+world gdp gr lag 1 coeff:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B82' )
+	~	
+	~		|
+
+world gdp gr sd:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B83' )
+	~	
+	~		|
+
+tourism hurricane coeff=
+	GET DIRECT CONSTANTS('?params', '' , 'B63')
+	~	
+	~		|
+
+DICE a1=
+	GET DIRECT CONSTANTS('?params', '' , 'B90' )
+	~	
+	~		|
+
+DICE a2=
+	GET DIRECT CONSTANTS('?params', '' , 'B91' )
+	~	
+	~		|
+
+DICE a3=
+	GET DIRECT CONSTANTS('?params', '' , 'B92' )
+	~	
+	~		|
+
+T anomaly=
+	initial T anomaly + SST to T coeff * (SST - initial SST)
+	~	
+	~		|
+
+tourism airlines coeff=
+	GET DIRECT CONSTANTS('?params', '' , 'B66')
+	~	
+	~		|
+
+tourism source country gdp coeff=
+	GET DIRECT CONSTANTS('?params', '' , 'B64')
+	~	
+	~		|
+
+source country gdp gr own lag 1[tourism source]=
+	GET DIRECT CONSTANTS('?params', '', 'B75' )
+	~	
+	~		|
+
+hurricane occurrence=
+	IF THEN ELSE(wind BRB > 74, 1, 0)
+	~	
+	~	74 MPH is the Saffir-Simpson threshold for a CAT 1 hurricane
+	|
+
+nominal exports=
+	domestic price of exports * X
+	~	
+	~		|
+
+mean world gdp gr:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13', 'B81' )
+	~	
+	~		|
+
+initial T anomaly=
+	GET DIRECT CONSTANTS('?params', '' , 'B88' )
+	~	
+	~		|
+
+tourism source country share[tourism source]:=
+	GET DIRECT DATA('?params', '', '13', 'B68' )
+	~	
+	~		|
+
+tourism source:
+	USA,GBR,CAN,CSS
+	~	
+	~		|
+
+source country price level[tourism source]:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B57' )
+	~	
+	~		|
+
+growth in number of airlines:=
+	GET DIRECT DATA('?params', '', '13', 'B62')
+	~	
+	~		|
+
+ts <-> tourism source
+	~	
+	~		|
+
+adj marginal saving out of wages=
+	1 - (1 - desired marginal saving out of wages ) * target imports/desired nominal imports of consumer goods
+	~	
+	~		|
+
+marginal expenditure on domestic goods=
+	(1 - smoothed adj marginal saving out of wages) * (1 - adj coeff my)
+	~	
+	~		|
+
+consumption as a share of GDP=
+	100 * (gdp basic consumption direct + (1 - smoothed adj marginal saving out of wages\
+		) * (wage bill smoothed - gdp basic consumption direct))/gdp nominal
+	~	
+	~		|
+
+adaptation expenditure as a share of GDP=
+	(100 * adaptation expenditure /gdp) * (domestic price of investment/GDP price level)
+	~	
+	~		|
+
+value of rebuilding and adaptation expenditure=
+	domestic price of investment * (adaptation expenditure + SUM(rebuilding[vintage!]))
+	~	
+	~		|
+
+smoothed adj marginal saving out of wages=
+	SMOOTHI(adj marginal saving out of wages, 1, desired marginal saving out of wages)
+	~	
+	~		|
+
+loss and damage as share of GDP=
+	(100 * SUM(rebuilding[vintage!])/gdp) * (domestic price of investment/GDP price level\
+		)
+	~	
+	~		|
+
+domestic saving target rate=
+	GET DIRECT CONSTANTS('?params', '', 'B11' )
+	~	
+	~		|
+
+target imports=
+	max(0, min(desired nominal imports of consumer goods, xr eqm nominal import of consumer goods\
+		))
+	~	
+	~		|
+
+xr eqm nominal import of consumer goods as share of GDP=
+	xr eqm nominal import of consumer goods/gdp nominal
+	~	
+	~		|
+
+desired nominal imports of consumer goods=
+	adj coeff my * desired marginal consumption out of wages
+	~	
+	~		|
+
+adj coeff my=
+	coeff my * (domestic price of imports/price of consumption )^import elasticity
+	~	
+	~		|
+
+change in gdp=
+	gdp /SMOOTH(gdp ,1) - 1
+	~	
+	~		|
+
+previous utilization deviation=
+	SMOOTHI(utilization ratio, TIME STEP,initial utilization) - 1
+	~	
+	~		|
+
+capital output ratio=
+	K/gdp
+	~	
+	~		|
+
+desired marginal consumption out of wages=
+	(1 - desired marginal saving out of wages) * (wage bill smoothed - gdp basic consumption direct\
+		)
+	~	
+	~		|
+
+desired marginal saving out of wages:=
+	GET DIRECT DATA('?params', '', '13' , 'B19' )
+	~	
+	~		|
+
+debt to gdp ratio=
+	exchange rate * D /gdp nominal
+	~	
+	~		|
+
+total output[sector]=
+	final demand[sector] + SUM(io multiplier[sector,sj!] * net production[sj!])
+	~	
+	~		|
+
+net production[si]=
+	SUM(io multiplier[si,sector!] * final demand[sector!])
+	~	
+	~		|
+
+investment rate=
+	max(0,(smoothed capital stock growth rate  + base investment rate + investment utilization term\
+		  - investment debt term
+	 ))
+	~	
+	~		|
+
+investment utilization term=
+	coeff iu  * previous utilization deviation
+	~	
+	~	coeff iu  * (min(utilization ratio, max utilization) - 1)
+	|
+
+smoothed capital stock growth rate=
+	SMOOTH(capital stock growth rate,gdp growth smoothing)
+	~	
+	~		|
+
+nominal domestic consumption=
+	gdp basic consumption direct + gdp indirect
+	~	
+	~		|
+
+capital stock growth rate=
+	K/SMOOTHI(K,TIME STEP,initial capital) - 1
+	~	
+	~		|
+
+nominal imports=
+	nominal investment + (adj coeff my/(1-adj coeff my)) * gdp indirect + nominal intermediate imports
+	~	
+	~		|
+
+nominal investment=
+	domestic price of investment * SUM(investment[vintage!])
+	~	
+	~		|
+
+intermediate imports coeff[export]:=
+	GET DIRECT DATA('?params', '', '13' , 'B53' ) ~~|
+intermediate imports coeff[domestic]:=
+	GET DIRECT DATA('?params', '', '13' , 'B54' )
+	~	
+	~		|
+
+investment[vintage]=
+	I  * wind threshold index[vintage] + SMOOTH(rebuilding[vintage], TIME STEP)
+	~	
+	~		|
+
+accepted SST =
+	(1 - init vs curr SST interpolation ) * initial SST + init vs curr SST interpolation\
+		  * SST
+	~	
+	~		|
+
+adaptation expenditure =
+	I  * (exp(theta * wind threshold ) - 1)
+	~	
+	~		|
+
+K =
+	SUM(K vintage[vintage!])
+	~	
+	~		|
+
+K vintage[vintage]= INTEG (
+	investment[vintage]-depreciation[vintage]-loss of productive capital[vintage],
+		IF THEN ELSE(vintage = w65, initial capital, 0))
+	~	
+	~		|
+
+location GEV =
+	base location GEV + location SST dependence * SST
+	~	mph
+	~		|
+
+p BRB given EC =
+	p BRB given EC init * p BRB given EC ramp
+	~	
+	~		|
+
+change in capital stock=
+	K /SMOOTH(K ,1) - 1
+	~	
+	~		|
+
+loss of productive capital[vintage]=
+	K vintage[vintage] * wind damage[vintage]
+	~	
+	~		|
+
+I =
+	investment rate  * K
+	~	
+	~		|
+
+wind =
+	max(0,(scale GEV/shape GEV) * ((-LN(GEV uniform rand))^(-shape GEV) - 1) + location GEV\
+		 )
+	~	
+	~		|
+
+wind BRB =
+	IF THEN ELSE(BRB given EC uniform rand > p BRB given EC , 0, wind )
+	~	
+	~		|
+
+depreciation[vintage]=
+	depreciation rate * K vintage[vintage]
+	~	
+	~		|
+
+SST =
+	initial SST + SST scenario multiplier  * (RAMP( 0.0246154 , INITIAL TIME , 2030 ) + \
+		RAMP(0.032, 2030, 2040) + RAMP(0.035, 2040, FINAL TIME))
+	~	degC
+	~		|
+
+SST rate of increase =
+	SST scenario multiplier  * (0.0246154 + STEP(0.032 - 0.0246154, 2030) + STEP(0.035 -\
+		 0.032, 2040))
+	~	
+	~		|
+
+wind threshold index[vintage]=
+	IF THEN ELSE(vintage wind threshold[vintage] >= wind threshold , IF THEN ELSE(vintage wind threshold\
+		[vintage] < wind threshold  + 1, 1, 0), 0)
+	~	
+	~		|
+
+expected SST rate of increase =
+	relative expected SST rate of increase  * SST rate of increase
+	~	
+	~		|
+
+damaged capital stock[vintage]=
+	loss of productive capital[vintage]
+	~	
+	~		|
+
+Rebuilding backlog[vintage]= INTEG (
+	damaged capital stock[vintage]-rebuilding[vintage],
+		0)
+	~	
+	~		|
+
+incremental damage factor from CC =
+	exp(damage SST coeff * (SST  - SMOOTH(SST , TIME STEP )))
+	~	
+	~		|
+
+wind damage[vintage]=
+	min(1,wind damage coefficient * max(0,wind BRB  - vintage wind threshold[vintage])^wind damage exponent\
+		)
+	~	
+	~		|
+
+relative loss of productive capital =
+	100 * SUM(loss of productive capital[vintage!])/SUM(K vintage[vintage!])
+	~	
+	~		|
+
+remitted profits =
+	remitted profits as a share of capital  * domestic price of investment * K
+	~	
+	~		|
+
+wind threshold =
+	0 * 65 + 1 * (threshold intercept + threshold log mult coeff * LN(p BRB given EC/(depreciation rate\
+		+discount rate - (
+	1 - depreciation rate
+	) * (exp(damage SST coeff * expected SST rate of increase ) - 1))) + threshold SST coeff
+	 * accepted SST )
+	~	mph
+	~		|
+
+base location GEV=
+	48.9629
+	~	mph
+	~		|
+
+BRB given EC uniform rand=
+	RANDOM UNIFORM(0,1,0)
+	~	
+	~		|
+
+location SST dependence=
+	27.3939
+	~	
+	~		|
+
+max rebuilding fraction of GDP=
+	0.2
+	~	
+	~		|
+
+wind damage exponent=
+	3
+	~	
+	~	This exponent is essentially Zhai and Jiang's estimate of the exponent on \
+		peak wind speed of 4.98
+	|
+
+threshold intercept=
+	40.3555
+	~	
+	~		|
+
+threshold log mult coeff=
+	17.1573
+	~	
+	~		|
+
+discount rate=
+	0.07
+	~	
+	~		|
+
+threshold SST coeff=
+	26.4674
+	~	mph/degC
+	~		|
+
+init vs curr SST interpolation =
+	0
+	~	
+	~	0 = initial
+		1 = current
+	|
+
+damage SST coeff=
+	1.54
+	~	
+	~		|
+
+p BRB given EC init=
+	0.357836
+	~	
+	~		|
+
+p BRB given EC ramp =
+	1 + 0 * RAMP( 0.033 , 10 , 40 )
+	~	
+	~		|
+
+wind damage coefficient=
+	4.45343e-07
+	~	
+	~		|
+
+initial SST=
+	0.53
+	~	
+	~		|
+
+SST scenario multiplier =
+	GET DIRECT CONSTANTS('?params', '', 'B48' )
+	~	
+	~		|
+
+theta=
+	0.00147686
+	~	1/mph
+	~		|
+
+shape GEV=
+	-0.374083
+	~	Dmnl
+	~		|
+
+relative expected SST rate of increase =
+	0
+	~	
+	~		|
+
+scale GEV=
+	34.2872
+	~	mph
+	~		|
+
+vintage wind threshold[vintage]=
+	GET DIRECT CONSTANTS('?vintage_thresholds', '', 'A1*')
+	~	
+	~		|
+
+A[si,sj]=
+	tech coeff[si,sj] + z * marginal expenditure on domestic goods * consumption share[si\
+		] * wage share[sj] * domestic prices[sj]/domestic prices[domestic]
+	~	
+	~		|
+
+vintage:
+	(w65-w150)
+	~	
+	~		|
+
+wage bill =
+	SUM(wage share[sector!] * domestic prices[sector!] * net production[sector!])
+	~	
+	~		|
+
+sector:
+	export, domestic
+	~	
+	~		|
+
+sj <-> sector
+	~	
+	~		|
+
+gdp basic consumption direct =
+	real basic consumption  * domestic prices[domestic]
+	~	
+	~		|
+
+io multiplier[si,sj]=
+	INVERT MATRIX(one minus A[si,si], ELMCOUNT(sector))
+	~	
+	~		|
+
+si <-> sector
+	~	
+	~		|
+
+gdp indirect =
+	marginal expenditure on domestic goods * (wage bill smoothed  - gdp basic consumption direct\
+		 )
+	~	
+	~		|
+
+one minus A[si,sj]=
+	IF THEN ELSE(si = sj, 1, 0) - A[si,sj]
+	~	
+	~		|
+
+tech coeff[domestic,domestic]=
+	0 ~~|
+tech coeff[domestic,export]:=
+	GET DIRECT DATA('?params', '', '13' , 'B24' ) ~~|
+tech coeff[export,domestic]:=
+	GET DIRECT DATA('?params', '', '13' , 'B23' ) ~~|
+tech coeff[export,export]=
+	0
+	~	
+	~		|
+
+domestic prices[export]=
+	domestic price of exports ~~|
+domestic prices[domestic]=
+	price of consumption
+	~	
+	~		|
+
+wage bill smoothed = INTEG (
+	(wage bill  - wage bill smoothed )/wage smoothing,
+		init smoothed wage bill)
+	~	
+	~		|
+
+wage share[export]:=
+	GET DIRECT DATA('?params', '', '13' , 'B22' ) ~~|
+wage share[domestic]:=
+	GET DIRECT DATA('?params', '', '13' , 'B21' )
+	~	
+	~		|
+
+Omega =
+	marginal expenditure on domestic goods * ((1 - z) * wage bill smoothed /domestic prices\
+		[domestic] - real basic consumption
+	 )
+	~	
+	~		|
+
+personal remittances =
+	GDP price level  * personal remittances per capita  * N
+	~	
+	~		|
+
+interest on debt =
+	interest rate on debt * D
+	~	
+	~		|
+
+domestic price of investment=
+	exchange rate * price of investment
+	~	
+	~		|
+
+personal remittances per capita :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B50' )
+	~	
+	~		|
+
+remitted profits as a share of capital :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B51' )
+	~	
+	~		|
+
+net new loans =
+	net new external liabilities /exchange rate
+	~	
+	~		|
+
+population decrease =
+	N  * crude death rate /1000
+	~	
+	~		|
+
+population increase =
+	N  * (crude birth rate  + net migration rate )/1000
+	~	
+	~		|
+
+N = INTEG (
+	population increase -population decrease ,
+		initial population)
+	~	
+	~		|
+
+gdp per capita =
+	1000*gdp /N
+	~	
+	~		|
+
+init smoothed wage bill=
+	init wage basic cons mult * real basic consumption
+	~	
+	~		|
+
+real basic consumption =
+	minimum consumption level * N
+	~	
+	~		|
+
+change in consumer price inflation =
+	consumer price inflation offset - consumer price inflation autoregressive coeff * consumer price inflation\
+		  - consumer price inflation gdp pc growth coefficient
+	 * gdp per capita gr
+	~	
+	~		|
+
+domestic price of imports=
+	exchange rate * price of imports
+	~	
+	~		|
+
+gdp price inflation =
+	(1 - exports as a share of gdp ) * gr price of consumption  + exports as a share of gdp\
+		  * gr domestic price of exports
+	~	
+	~		|
+
+import elasticity:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B30' )
+	~	
+	~		|
+
+gdp price increase =
+	gdp price inflation  * GDP price level
+	~	
+	~		|
+
+GDP price level = INTEG (
+	gdp price increase ,
+		initial gdp price level)
+	~	
+	~		|
+
+gdp =
+	gdp nominal /SMOOTH(GDP price level ,TIME STEP)
+	~	
+	~		|
+
+consumption share[export]:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B25' ) ~~|
+consumption share[domestic]=
+	1 - consumption share[export]
+	~	
+	~		|
+
+gdp nominal =
+	gdp basic consumption direct  + gdp exports direct  + gdp indirect
+	~	
+	~		|
+
+initial gdp price level=
+	GET DIRECT CONSTANTS('?params','','B9')
+	~	
+	~		|
+
+minimum consumption level:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B20' )
+	~	
+	~		|
+
+gr domestic price of exports=
+	(domestic price of exports/SMOOTH(domestic price of exports,TIME STEP) - 1)/TIME STEP
+	~	
+	~		|
+
+gr price of consumption =
+	(price of consumption /SMOOTH(price of consumption ,TIME STEP) - 1)/TIME STEP
+	~	
+	~		|
+
+init wage basic cons mult=
+	GET DIRECT CONSTANTS('?params','','B10')
+	~	
+	~		|
+
+domestic price of exports=
+	exchange rate * price of exports
+	~	
+	~		|
+
+exports as a share of gdp =
+	gdp exports direct /gdp nominal
+	~	
+	~		|
+
+gdp growth rate =
+	gdp /SMOOTH(gdp ,TIME STEP) - 1
+	~	
+	~		|
+
+wage smoothing:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B26' )
+	~	
+	~		|
+
+z=
+	TIME STEP/wage smoothing
+	~	
+	~		|
+
+price of consumption = INTEG (
+	inflation cpi ,
+		initial price of consumption)
+	~	
+	~		|
+
+initial price of consumption=
+	GET DIRECT CONSTANTS('?params', '', 'B8' )
+	~	
+	~		|
+
+consumer price inflation = INTEG (
+	change in consumer price inflation ,
+		initial consumer price inflation)
+	~	
+	~		|
+
+consumer price inflation autoregressive coeff=
+	0.7
+	~	
+	~	Empirically estimated, equal to -(0.3 - 1.0).
+	|
+
+consumer price inflation gdp pc growth coefficient=
+	0.2
+	~	
+	~	Empirically determined.
+	|
+
+inflation cpi =
+	consumer price inflation  * price of consumption
+	~	
+	~		|
+
+consumer price inflation offset:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B43' )
+	~	
+	~		|
+
+initial consumer price inflation=
+	GET DIRECT CONSTANTS('?params', '', 'B7' )
+	~	
+	~		|
+
+gdp per capita gr =
+	gdp per capita /SMOOTH(gdp per capita ,TIME STEP) - 1
+	~	
+	~		|
+
+change in utilization =
+	marginal change in utilization  * utilization ratio
+	~	
+	~		|
+
+marginal change in utilization =
+	change in gdp  - change in capital stock
+	~	
+	~		|
+
+D = INTEG (
+	SMOOTH(interest on debt ,TIME STEP)+net new loans ,
+		initial external debt)
+	~	
+	~		|
+
+X excl tourism = INTEG (
+	change in non tourist exports ,
+		initial exports)
+	~	
+	~		|
+
+investment debt term =
+	coeff id * (debt to gdp ratio  - reference debt to gdp level)
+	~	
+	~		|
+
+smoothed gdp growth rate=
+	SMOOTH(gdp growth rate ,gdp growth smoothing)
+	~	
+	~		|
+
+utilization ratio = INTEG (
+	change in utilization ,
+		initial utilization)
+	~	
+	~		|
+
+export growth rate world gdp coeff :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B32' )
+	~	
+	~		|
+
+initial exports=
+	GET DIRECT CONSTANTS('?params','','B2')
+	~	
+	~		|
+
+NOISE SEED=
+	1324
+	~	
+	~		|
+
+export growth rate standard deviation :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B33' )
+	~	
+	~		|
+
+reference debt to gdp level:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B40' )
+	~	
+	~		|
+
+gdp growth smoothing:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B27' )
+	~	
+	~		|
+
+initial utilization=
+	GET DIRECT CONSTANTS('?params','','B6')
+	~	
+	~		|
+
+coeff id:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B38' )
+	~	
+	~		|
+
+coeff iu:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B37' )
+	~	
+	~		|
+
+coeff my:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B29' )
+	~	
+	~		|
+
+exchange rate:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B42' )
+	~	
+	~		|
+
+price of investment:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B44' )
+	~	
+	~		|
+
+price of exports:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B46' )
+	~	
+	~		|
+
+price of imports:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B45' )
+	~	
+	~		|
+
+base investment rate:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B35' )
+	~	
+	~		|
+
+crude birth rate :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B16' )
+	~	
+	~		|
+
+crude death rate :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B17' )
+	~	
+	~		|
+
+depreciation rate:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B36' )
+	~	
+	~		|
+
+initial capital=
+	GET DIRECT CONSTANTS('?params','','B3')
+	~	
+	~		|
+
+initial external debt=
+	GET DIRECT CONSTANTS('?params','','B4')
+	~	
+	~		|
+
+initial population=
+	GET DIRECT CONSTANTS('?params', '', 'B5' )
+	~	
+	~		|
+
+interest rate on debt:INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B39' )
+	~	
+	~		|
+
+net migration rate :INTERPOLATE::=
+	GET DIRECT DATA('?params', '', '13' , 'B15' )
+	~	
+	~		|
+
+********************************************************
+	.Control
+********************************************************~
+		Simulation Control Parameters
+	|
+
+FINAL TIME  = 2080
+	~	Year
+	~	The final time for the simulation.
+	|
+
+INITIAL TIME  = 2011
+	~	Year
+	~	The initial time for the simulation.
+	|
+
+SAVEPER  = 
+        TIME STEP
+	~	Year [0,?]
+	~	The frequency with which output is stored.
+	|
+
+TIME STEP  = 0.25
+	~	Year [0,?]
+	~	The time step for the simulation.
+	|
+
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*core model
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,D,649,682,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,2,48,493,684,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(585,684)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(526,684)|
+11,5,48,556,684,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,6,net new loans,556,703,43,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,7,48,651,779,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,8,10,1,4,0,0,22,0,0,0,-1--1--1,,1|(653,716)|
+1,9,10,7,100,0,0,22,0,0,0,-1--1--1,,1|(653,756)|
+11,10,48,653,736,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,11,interest on debt,710,736,49,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,12,interest rate on debt,796,808,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,13,initial external debt,576,763,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,14,13,1,1,0,0,0,0,64,1,-1--1--1,,1|(609,717)|
+10,15,base investment rate,181,304,50,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,16,net new external liabilities,1016,412,52,19,8,131,0,0,0,0,0,0,0,0,0,0,0,0
+10,17,debt to gdp ratio,618,470,53,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,18,coeff id,435,348,25,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,19,coeff iu,110,504,24,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,20,nominal imports,836,270,50,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,21,coeff my,1140,128,28,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,22,price of consumption,836,314,45,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,23,exchange rate,1077,477,53,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,24,TIME STEP,1403,586,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,25,TIME STEP,780,637,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,26,25,1,0,0,0,0,0,64,0,-1--1--1,,1|(725,655)|
+10,27,previous utilization deviation,250,541,58,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,28,TIME STEP,1333,565,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,29,TIME STEP,230,630,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,30,29,27,1,0,0,0,0,128,0,-1--1--1,,1|(248,581)|
+10,31,initial utilization,372,600,56,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,32,31,27,1,0,0,0,0,64,0,-1--1--1,,1|(317,582)|
+10,33,gdp growth rate,472,289,50,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,34,price of investment,1356,183,39,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,35,TIME STEP,374,189,41,11,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,36,35,33,1,0,0,0,0,128,0,-1--1--1,,1|(420,219)|
+10,37,smoothed gdp growth rate,349,260,46,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,38,33,37,1,0,0,0,0,128,0,-1--1--1,,1|(403,260)|
+10,39,gdp growth smoothing,221,187,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,40,39,37,1,0,0,0,0,128,0,-1--1--1,,1|(298,221)|
+10,41,exchange rate,515,590,53,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,42,41,6,1,0,0,0,0,64,0,-1--1--1,,1|(514,631)|
+1,43,1,11,1,0,0,0,0,64,0,-1--1--1,,1|(701,689)|
+10,44,net saving,1249,372,32,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,45,16,44,1,0,0,0,0,128,0,-1--1--1,,1|(1077,418)|
+10,46,net new external liabilities,403,733,57,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,47,46,6,1,0,0,0,0,128,0,-1--1--1,,1|(484,728)|
+10,48,investment debt term,452,426,50,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,49,17,48,1,0,0,0,0,128,0,-1--1--1,,1|(502,427)|
+1,50,18,48,1,0,0,0,0,128,0,-1--1--1,,1|(448,374)|
+10,51,investment utilization term,195,431,46,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,52,19,51,1,0,0,0,0,128,0,-1--1--1,,1|(156,484)|
+10,53,reference debt to gdp level,376,499,55,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,54,53,48,1,0,0,0,0,128,0,-1--1--1,,1|(389,467)|
+10,55,marginal change in utilization,332,457,63,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,56,investment rate,323,347,47,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,57,15,56,1,0,0,0,0,128,0,-1--1--1,,1|(254,315)|
+1,58,48,56,1,0,0,0,0,128,0,-1--1--1,,1|(386,386)|
+1,59,51,56,1,0,0,0,0,128,0,-1--1--1,,1|(243,376)|
+10,60,gdp,584,369,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,61,GDP price level,847,526,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,62,domestic price of imports,846,130,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,63,import elasticity,1015,221,49,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,64,adj coeff my,1005,146,40,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,65,price of consumption,884,64,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,66,price of imports,836,314,59,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,67,64,20,1,0,0,0,0,64,0,-1--1--1,,1|(912,199)|
+10,68,personal remittances per capita,935,634,65,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,69,remitted profits as a share of capital,1325,572,63,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,70,domestic price of investment,1292,623,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,71,12,11,1,0,0,0,0,128,0,-1--1--1,,1|(733,779)|
+10,72,nominal exports,1189,263,50,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,73,72,16,1,0,0,0,0,128,0,-1--1--1,,1|(1128,356)|
+10,74,personal remittances,1041,548,36,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,75,68,74,1,0,0,0,0,128,0,-1--1--1,,1|(970,586)|
+10,76,remitted profits,1207,518,48,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,77,70,76,1,0,0,0,0,128,0,-1--1--1,,1|(1238,591)|
+1,78,69,76,1,0,0,0,0,128,0,-1--1--1,,1|(1249,550)|
+10,79,N,1003,671,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,80,79,74,1,0,0,0,0,128,0,-1--1--1,,1|(1000,617)|
+10,81,domestic price of exports,1351,252,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,82,81,72,1,0,0,0,0,128,0,-1--1--1,,1|(1273,285)|
+10,83,K,1330,518,32,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,84,83,76,1,0,0,0,0,128,0,-1--1--1,,1|(1287,529)|
+1,85,1,17,1,0,0,0,0,128,0,-1--1--1,,1|(682,571)|
+1,86,60,33,1,0,0,0,0,128,0,-1--1--1,,1|(541,327)|
+1,87,41,17,1,0,0,0,0,128,0,-1--1--1,,1|(524,545)|
+1,88,61,74,1,0,0,0,0,128,0,-1--1--1,,1|(904,540)|
+10,89,intermediate imports coeff,569,64,42,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,90,nominal intermediate imports,687,180,65,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,91,total output,553,139,45,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,92,91,90,1,0,0,0,0,128,0,-1--1--1,,1|(602,170)|
+1,93,89,90,1,0,0,0,0,128,0,-1--1--1,,1|(637,107)|
+10,94,investment,525,176,43,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,95,domestic price of investment,517,222,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,96,nominal investment,662,236,59,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,97,94,96,1,0,0,0,0,128,0,-1--1--1,,1|(610,197)|
+1,98,95,96,1,0,0,0,0,128,0,-1--1--1,,1|(573,247)|
+1,99,96,20,1,0,0,0,0,128,0,-1--1--1,,1|(766,237)|
+1,100,90,20,1,0,0,0,0,128,0,-1--1--1,,1|(763,206)|
+10,101,gdp indirect,779,343,47,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,102,101,20,1,0,0,0,0,128,0,-1--1--1,,1|(811,311)|
+10,103,K,146,52,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,104,capital stock growth rate,283,64,41,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,105,103,104,1,0,0,0,0,128,0,-1--1--1,,1|(204,39)|
+1,106,35,104,1,0,0,0,0,128,0,-1--1--1,,1|(306,140)|
+10,107,initial capital,429,35,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,108,107,104,1,0,0,0,0,128,0,-1--1--1,,1|(350,34)|
+10,109,smoothed capital stock growth rate,141,108,56,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,110,39,109,1,0,0,0,0,128,0,-1--1--1,,1|(171,166)|
+1,111,104,109,1,0,0,0,0,128,0,-1--1--1,,1|(203,72)|
+1,112,109,56,1,0,0,0,0,128,0,-1--1--1,,1|(174,200)|
+10,113,depreciation rate,323,377,44,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,114,gdp nominal,713,407,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,115,114,17,1,0,0,0,0,128,0,-1--1--1,,1|(679,434)|
+1,116,27,51,0,0,0,0,0,64,0,-1--1--1,,1|(225,492)|
+10,117,utilization ratio,90,578,54,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,118,117,27,1,0,0,0,0,128,0,-1--1--1,,1|(171,575)|
+1,119,63,64,1,0,0,0,0,128,0,-1--1--1,,1|(1013,178)|
+1,120,62,64,1,0,0,0,0,128,0,-1--1--1,,1|(928,131)|
+1,121,21,64,1,0,0,0,0,128,0,-1--1--1,,1|(1079,118)|
+1,122,65,64,1,0,0,0,0,128,0,-1--1--1,,1|(951,103)|
+10,123,desired nominal imports of consumer goods,1082,55,75,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,124,64,123,1,0,0,0,0,128,0,-1--1--1,,1|(1033,107)|
+10,125,desired marginal consumption out of wages,1380,146,61,28,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,126,125,123,1,0,0,0,0,128,0,-1--1--1,,1|(1281,102)|
+10,127,xr eqm nominal import of consumer goods,1293,-45,71,19,8,3,0,18,0,0,0,0,-1--1--1,0-0-0,|12|U|255-0-0,0,0,0,0,0,0
+10,128,nominal exports,1412,54,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,129,128,127,1,0,0,0,0,128,0,-1--1--1,,1|(1363,3)|
+10,130,nominal intermediate imports,1485,-64,69,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,131,130,127,1,0,0,0,0,128,0,-1--1--1,,1|(1383,-63)|
+10,132,gdp nominal,1603,106,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,133,xr eqm nominal import of consumer goods as share of GDP,1676,63,89,28,8,3,0,18,0,0,0,0,-1--1--1,0-0-0,|12|U|255-0-0,0,0,0,0,0,0
+1,134,127,133,1,0,0,0,0,128,0,-1--1--1,,1|(1480,-11)|
+1,135,132,133,1,0,0,0,0,128,0,-1--1--1,,1|(1654,92)|
+10,136,domestic saving target rate,1185,-178,50,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,137,136,127,1,0,0,0,0,128,0,-1--1--1,,1|(1257,-127)|
+1,138,132,127,1,0,0,0,0,128,0,-1--1--1,,1|(1485,26)|
+10,139,target imports,1127,-19,44,11,8,3,0,18,0,0,0,0,-1--1--1,0-0-0,|12|U|255-0-0,0,0,0,0,0,0
+1,140,123,139,1,0,0,0,0,128,0,-1--1--1,,1|(1109,27)|
+1,141,127,139,1,0,0,0,0,128,0,-1--1--1,,1|(1202,-1)|
+10,142,desired marginal saving out of wages,835,-118,67,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,143,adj marginal saving out of wages,960,-37,60,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,144,142,143,1,0,0,0,0,128,0,-1--1--1,,1|(888,-95)|
+1,145,139,143,1,0,0,0,0,128,0,-1--1--1,,1|(1041,-6)|
+1,146,123,143,1,0,0,0,0,128,0,-1--1--1,,1|(1016,15)|
+10,147,X,1234,159,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,148,147,72,1,0,0,0,0,128,0,-1--1--1,,1|(1199,185)|
+10,149,nominal investment,1395,373,39,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,150,149,44,1,0,0,0,0,128,0,-1--1--1,,1|(1330,384)|
+10,151,net CCRIF payout in BBD,1339,-174,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,152,151,127,1,0,0,0,0,128,0,-1--1--1,,1|(1312,-138)|
+1,153,62,90,1,0,0,0,0,128,0,-1--1--1,,1|(752,122)|
+1,154,20,16,1,0,0,0,0,128,0,-1--1--1,,1|(947,286)|
+10,155,net remittance inflows,1058,479,45,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,156,74,155,1,0,0,0,0,128,0,-1--1--1,,1|(1031,518)|
+1,157,76,155,1,0,0,0,0,128,0,-1--1--1,,1|(1115,517)|
+1,158,155,16,1,0,0,0,0,128,0,-1--1--1,,1|(1038,449)|
+10,159,net CCRIF payout in BBD,832,380,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,160,159,16,1,0,0,0,0,128,0,-1--1--1,,1|(931,381)|
+10,161,net remittance inflows,1271,42,49,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,162,161,127,1,0,0,0,0,128,0,-1--1--1,,1|(1292,11)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*prices
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,price of exports,582,162,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,2,price of imports,564,89,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,3,exchange rate,750,116,44,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,4,price of investment,1083,106,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,5,consumer price inflation,346,303,46,27,3,131,0,0,0,0,0,0,0,0,0,0,0,0
+10,6,initial consumer price inflation,342,396,49,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,7,6,5,1,0,0,0,0,128,1,-1--1--1,,1|(335,355)|
+12,8,48,150,305,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,9,11,5,4,0,0,22,0,0,0,-1--1--1,,1|(268,305)|
+1,10,11,8,100,0,0,22,0,0,0,-1--1--1,,1|(192,305)|
+11,11,48,230,305,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,12,change in consumer price inflation,230,332,62,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,13,consumer price inflation offset,179,223,53,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,14,13,11,1,0,0,0,0,128,0,-1--1--1,,1|(215,260)|
+10,15,consumer price inflation autoregressive coeff,116,410,75,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,16,15,12,1,0,0,0,0,128,0,-1--1--1,,1|(195,380)|
+10,17,gdp per capita gr,327,213,51,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,18,17,12,1,0,0,0,0,128,0,-1--1--1,,1|(266,235)|
+10,19,consumer price inflation gdp pc growth coefficient,272,484,81,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,20,19,12,1,0,0,0,0,128,0,-1--1--1,,1|(259,425)|
+1,21,5,11,1,0,0,0,0,128,0,-1--1--1,,1|(290,259)|
+10,22,price of consumption,600,290,47,29,3,131,0,0,0,0,0,0,0,0,0,0,0,0
+10,23,initial price of consumption,594,389,43,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,24,23,22,1,0,0,0,0,128,1,-1--1--1,,1|(619,347)|
+12,25,48,447,293,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,26,28,22,4,0,0,22,0,0,0,-1--1--1,,1|(532,293)|
+1,27,28,25,100,0,0,22,0,0,0,-1--1--1,,1|(478,293)|
+11,28,48,505,293,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,29,inflation cpi,505,312,36,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,30,5,28,1,0,0,0,0,128,0,-1--1--1,,1|(426,250)|
+1,31,22,28,1,0,0,0,0,128,0,-1--1--1,,1|(540,251)|
+10,32,domestic price of exports,735,190,55,19,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,33,3,32,1,0,0,0,0,64,0,-1--1--1,,1|(753,144)|
+1,34,1,32,1,0,0,0,0,64,0,-1--1--1,,1|(646,184)|
+10,35,domestic price of imports,735,54,55,19,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,36,3,35,1,0,0,0,0,64,0,-1--1--1,,1|(746,91)|
+1,37,2,35,1,0,0,0,0,64,0,-1--1--1,,1|(635,60)|
+10,38,domestic price of investment,915,117,55,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,39,3,38,1,0,0,0,0,128,0,-1--1--1,,1|(832,129)|
+1,40,4,38,1,0,0,0,0,128,0,-1--1--1,,1|(1012,93)|
+10,41,domestic prices,873,275,49,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,42,32,41,1,0,0,0,0,128,0,-1--1--1,,1|(823,220)|
+1,43,22,41,1,0,0,0,0,128,0,-1--1--1,,1|(698,324)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*population dynamics
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,N,231,241,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,2,48,238,131,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(238,209)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(238,162)|
+11,5,48,238,192,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,6,population increase,294,192,34,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,7,48,369,242,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,8,10,7,4,0,0,22,0,0,0,-1--1--1,,1|(340,242)|
+1,9,10,1,100,0,0,22,0,0,0,-1--1--1,,1|(290,242)|
+11,10,48,315,242,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,11,population decrease,315,269,34,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,12,1,5,1,0,0,0,0,64,0,-1--1--1,,1|(180,201)|
+1,13,1,10,1,0,0,0,0,64,0,-1--1--1,,1|(283,220)|
+10,14,net migration rate,165,109,54,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,15,crude birth rate,320,111,48,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,16,14,5,1,0,0,0,0,64,0,-1--1--1,,1|(174,134)|
+1,17,15,5,1,0,0,0,0,64,0,-1--1--1,,1|(281,160)|
+10,18,crude death rate,425,283,51,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,19,18,11,1,0,0,0,0,64,0,-1--1--1,,1|(351,273)|
+10,20,initial population,103,143,51,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,21,20,1,1,0,0,0,0,64,1,-1--1--1,,1|(131,199)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*utilization
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,marginal change in utilization,298,246,58,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,2,change in gdp,172,302,44,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,3,change in capital stock,415,310,53,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,4,3,1,1,0,0,0,0,128,0,-1--1--1,,1|(392,270)|
+1,5,2,1,1,0,0,0,0,128,0,-1--1--1,,1|(207,268)|
+10,6,utilization ratio,274,124,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,7,48,116,121,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,8,10,6,4,0,0,22,0,0,0,-1--1--1,,1|(210,121)|
+1,9,10,7,100,0,0,22,0,0,0,-1--1--1,,1|(150,121)|
+11,10,48,180,121,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,11,change in utilization,180,140,60,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,12,1,11,1,0,0,0,0,128,0,-1--1--1,,1|(211,211)|
+1,13,6,10,1,0,0,0,0,128,0,-1--1--1,,1|(235,72)|
+10,14,initial utilization,402,83,47,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,15,14,6,1,0,0,0,0,128,1,-1--1--1,,1|(338,63)|
+10,16,gdp,147,393,37,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,17,16,2,1,0,0,0,0,128,0,-1--1--1,,1|(142,350)|
+10,18,K,428,389,32,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,19,18,3,1,0,0,0,0,128,0,-1--1--1,,1|(433,349)|
+10,20,capital output ratio,293,461,58,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,21,18,20,1,0,0,0,0,128,0,-1--1--1,,1|(388,439)|
+1,22,16,20,1,0,0,0,0,128,0,-1--1--1,,1|(183,437)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*exports
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,TIME STEP,275,224,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,2,TIME STEP,275,170,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,3,X excl tourism,615,296,39,25,3,131,0,0,0,0,0,0,0,0,0,0,0,0
+12,4,48,604,165,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,5,7,3,4,0,0,22,0,0,0,-1--1--1,,1|(603,249)|
+1,6,7,4,100,0,0,22,0,0,0,-1--1--1,,1|(603,194)|
+11,7,48,603,222,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,8,change in non tourist exports,666,222,46,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,9,export growth rate,504,193,58,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,10,3,7,1,0,0,0,0,64,0,-1--1--1,,1|(592,261)|
+10,11,export growth rate world gdp coeff,320,183,59,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,12,export growth rate standard deviation,369,124,59,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,13,9,7,1,0,0,0,0,64,0,-1--1--1,,1|(560,218)|
+10,14,initial exports,702,343,42,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,15,14,3,1,0,0,0,0,64,1,-1--1--1,,1|(633,339)|
+10,16,NOISE SEED,536,112,47,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,17,world gdp gr,417,300,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,18,17,9,1,0,0,0,0,128,0,-1--1--1,,1|(485,255)|
+1,19,12,9,1,0,0,0,0,128,0,-1--1--1,,1|(449,149)|
+1,20,11,9,1,0,0,0,0,128,0,-1--1--1,,1|(397,203)|
+10,21,X,522,434,8,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,22,tourist expenditure,666,416,42,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,23,22,21,1,0,0,0,0,128,0,-1--1--1,,1|(597,439)|
+1,24,3,21,1,0,0,0,0,128,0,-1--1--1,,1|(552,349)|
+10,25,domestic price of exports,403,501,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,26,25,21,1,0,0,0,0,128,0,-1--1--1,,1|(428,455)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*gdp
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,marginal expenditure on domestic goods,736,18,66,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,2,minimum consumption level,133,403,57,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,3,N,218,365,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,4,real basic consumption,290,416,41,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,5,2,4,1,0,0,0,0,128,0,-1--1--1,,1|(216,420)|
+1,6,3,4,1,0,0,0,0,128,0,-1--1--1,,1|(238,398)|
+10,7,gdp basic consumption direct,373,476,60,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,8,4,7,1,0,0,0,0,128,0,-1--1--1,,1|(335,450)|
+10,9,gdp exports direct,309,589,57,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,10,gdp,430,647,14,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,11,wage smoothing,1023,433,51,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-0-255,0,0,0,0,0,0
+10,12,TIME STEP,1215,308,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,13,init smoothed wage bill,854,333,43,19,8,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,14,gdp indirect,594,492,38,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,15,z,1056,315,5,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,16,12,15,1,0,0,0,0,128,0,-1--1--1,,1|(1126,295)|
+1,17,11,15,1,0,0,0,0,128,0,-1--1--1,,1|(1050,369)|
+10,18,consumption share,618,180,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,19,Omega,966,172,24,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,20,15,19,1,0,0,0,0,128,0,-1--1--1,,1|(1024,243)|
+1,21,7,14,1,0,0,0,0,128,0,-1--1--1,,1|(465,455)|
+10,22,GDP price level,1017,756,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,23,48,841,761,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,24,26,22,4,0,0,22,0,0,0,-1--1--1,,1|(948,761)|
+1,25,26,23,100,0,0,22,0,0,0,-1--1--1,,1|(879,761)|
+11,26,48,914,761,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,27,gdp price increase,914,780,57,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+10,28,gr domestic price of exports,770,677,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,29,gr price of consumption,985,641,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,30,gdp price inflation,938,696,56,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,31,28,30,1,0,0,0,0,128,0,-1--1--1,,1|(826,694)|
+1,32,29,30,1,0,0,0,0,128,0,-1--1--1,,1|(957,659)|
+1,33,30,26,1,0,0,0,0,128,0,-1--1--1,,1|(919,717)|
+1,34,22,26,1,0,0,0,0,128,0,-1--1--1,,1|(973,723)|
+10,35,initial gdp price level,1068,832,48,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-128-0,0,0,0,0,0,0
+1,36,35,22,1,0,0,0,0,128,1,-1--1--1,,1|(1031,805)|
+10,37,exports as a share of gdp,1221,723,58,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,38,gdp exports direct,1330,675,43,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,39,38,37,1,0,0,0,0,128,0,-1--1--1,,1|(1256,687)|
+10,40,TIME STEP,546,697,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,41,40,10,0,0,0,0,0,64,0,-1--1--1,,1|(488,672)|
+10,42,gdp nominal,410,543,39,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,43,42,10,1,0,0,0,0,128,0,-1--1--1,,1|(410,594)|
+1,44,14,42,1,0,0,0,0,128,0,-1--1--1,,1|(510,531)|
+1,45,9,42,1,0,0,0,0,128,0,-1--1--1,,1|(343,564)|
+1,46,7,42,1,0,0,0,0,128,0,-1--1--1,,1|(398,505)|
+10,47,gdp nominal,1308,779,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,48,47,37,1,0,0,0,0,128,0,-1--1--1,,1|(1252,769)|
+10,49,init wage basic cons mult,738,289,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12|U|0-128-0,0,0,0,0,0,0
+1,50,49,13,1,0,0,0,0,128,0,-1--1--1,,1|(805,275)|
+10,51,z,357,186,14,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,52,N,379,782,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,53,gdp per capita,442,737,46,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,54,52,53,1,0,0,0,0,128,0,-1--1--1,,1|(402,764)|
+10,55,gdp per capita gr,603,761,54,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,56,53,55,1,0,0,0,0,128,0,-1--1--1,,1|(505,759)|
+1,57,10,53,1,0,0,0,0,128,0,-1--1--1,,1|(430,687)|
+1,58,40,55,1,0,0,0,0,128,0,-1--1--1,,1|(571,714)|
+1,59,37,30,1,0,0,0,0,128,0,-1--1--1,,1|(1121,703)|
+10,60,GDP price level,292,714,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,61,60,10,1,0,0,0,0,128,0,-1--1--1,,1|(352,676)|
+10,62,tech coeff,379,63,32,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,63,wage share,430,318,36,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,64,final demand,746,237,40,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,65,real basic consumption,864,242,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,66,65,64,1,0,0,0,0,128,0,-1--1--1,,1|(792,243)|
+10,67,net production,628,333,46,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,68,io multiplier,503,295,37,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,69,one minus A,474,226,40,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,70,69,68,1,0,0,0,0,128,0,-1--1--1,,1|(479,255)|
+1,71,68,67,1,0,0,0,0,128,0,-1--1--1,,1|(552,329)|
+1,72,64,67,1,0,0,0,0,128,0,-1--1--1,,1|(664,262)|
+10,73,domestic prices,781,402,58,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,74,wage bill,625,393,29,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,75,73,74,1,0,0,0,0,128,0,-1--1--1,,1|(688,407)|
+1,76,67,74,1,0,0,0,0,128,0,-1--1--1,,1|(627,367)|
+10,77,wage bill smoothed,808,459,32,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,78,74,77,1,0,0,0,0,128,0,-1--1--1,,1|(683,428)|
+10,79,domestic prices,728,63,58,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,80,77,14,1,0,0,0,0,128,0,-1--1--1,,1|(695,486)|
+1,81,19,64,1,0,0,0,0,128,0,-1--1--1,,1|(851,174)|
+1,82,18,64,1,0,0,0,0,128,0,-1--1--1,,1|(678,192)|
+1,83,65,19,1,0,0,0,0,128,0,-1--1--1,,1|(922,232)|
+1,84,65,13,1,0,0,0,0,128,0,-1--1--1,,1|(884,264)|
+1,85,13,77,1,0,0,0,0,128,1,-1--1--1,,1|(866,386)|
+1,86,11,77,1,0,0,0,0,128,0,-1--1--1,,1|(890,458)|
+1,87,79,19,1,0,0,0,0,128,0,-1--1--1,,1|(855,105)|
+10,88,domestic prices,124,542,58,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,89,88,7,1,0,0,0,0,128,0,-1--1--1,,1|(253,481)|
+1,90,88,9,1,0,0,0,0,128,0,-1--1--1,,1|(203,576)|
+10,91,A,485,141,8,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,92,63,91,1,0,0,0,0,128,0,-1--1--1,,1|(428,224)|
+1,93,79,91,1,0,0,0,0,128,0,-1--1--1,,1|(592,84)|
+1,94,62,91,1,0,0,0,0,128,0,-1--1--1,,1|(415,101)|
+1,95,51,91,1,0,0,0,0,128,0,-1--1--1,,1|(404,156)|
+1,96,18,91,1,0,0,0,0,128,0,-1--1--1,,1|(530,168)|
+1,97,1,91,1,0,0,0,0,128,0,-1--1--1,,1|(580,55)|
+1,98,91,69,1,0,0,0,0,128,0,-1--1--1,,1|(472,175)|
+1,99,77,19,1,0,0,0,0,128,0,-1--1--1,,1|(965,356)|
+10,100,marginal expenditure on domestic goods,688,589,70,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,101,100,14,1,0,0,0,0,128,0,-1--1--1,,1|(615,547)|
+1,102,1,19,1,0,0,0,0,128,0,-1--1--1,,1|(856,63)|
+1,103,63,74,1,0,0,0,0,128,0,-1--1--1,,1|(497,369)|
+10,104,total output,586,225,36,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,105,64,104,1,0,0,0,0,128,0,-1--1--1,,1|(660,216)|
+1,106,67,104,1,0,0,0,0,128,0,-1--1--1,,1|(591,286)|
+10,107,nominal domestic consumption,469,405,55,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,108,7,107,1,0,0,0,0,128,0,-1--1--1,,1|(395,436)|
+1,109,14,107,1,0,0,0,0,128,0,-1--1--1,,1|(564,448)|
+1,110,68,104,1,0,0,0,0,128,0,-1--1--1,,1|(529,259)|
+10,111,desired marginal saving out of wages,1217,490,62,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,112,adj coeff my,874,-49,49,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,113,112,1,1,0,0,0,0,128,0,-1--1--1,,1|(794,-27)|
+10,114,desired marginal consumption out of wages,994,517,61,28,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,115,77,114,1,0,0,0,0,128,0,-1--1--1,,1|(861,492)|
+10,116,gdp basic consumption direct,867,583,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,117,116,114,1,0,0,0,0,128,0,-1--1--1,,1|(908,553)|
+10,118,desired marginal saving out of wages,530,-71,67,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,119,111,114,1,0,0,0,0,128,0,-1--1--1,,1|(1128,478)|
+10,120,adj marginal saving out of wages,279,-14,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,121,smoothed adj marginal saving out of wages,515,11,72,19,8,3,0,18,0,0,0,0,-1--1--1,0-0-0,|12|U|255-0-0,0,0,0,0,0,0
+1,122,120,121,1,0,0,0,0,128,0,-1--1--1,,1|(382,-19)|
+1,123,118,121,1,0,0,0,0,128,0,-1--1--1,,1|(542,-38)|
+1,124,121,1,1,0,0,0,0,128,0,-1--1--1,,1|(632,-6)|
+10,125,X,229,659,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,126,125,9,1,0,0,0,0,128,0,-1--1--1,,1|(265,631)|
+10,127,X,753,112,17,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,128,127,64,1,0,0,0,0,128,0,-1--1--1,,1|(740,152)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*climate impacts
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,location GEV,405,243,43,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,2,shape GEV,399,345,37,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,3,scale GEV,397,291,35,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,4,wind,565,302,17,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,5,GEV uniform rand,625,215,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,6,5,4,1,0,0,0,0,128,0,-1--1--1,,1|(616,245)|
+1,7,1,4,1,0,0,0,0,128,0,-1--1--1,,1|(498,265)|
+1,8,3,4,1,0,0,0,0,128,0,-1--1--1,,1|(473,309)|
+1,9,2,4,1,0,0,0,0,128,0,-1--1--1,,1|(507,350)|
+10,10,SST,278,237,16,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,11,FINAL TIME,328,197,55,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,12,11,10,1,0,0,0,0,64,0,-1--1--1,,1|(326,222)|
+10,13,INITIAL TIME,151,248,60,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,14,13,10,1,0,0,0,0,64,0,-1--1--1,,1|(208,265)|
+1,15,10,1,1,0,0,0,0,128,0,-1--1--1,,1|(329,252)|
+10,16,location SST dependence,496,200,42,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,17,16,1,1,0,0,0,0,128,0,-1--1--1,,1|(430,216)|
+10,18,wind damage,728,397,42,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,19,wind damage exponent,857,302,43,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,20,19,18,1,0,0,0,0,128,0,-1--1--1,,1|(815,356)|
+10,21,p BRB given EC,525,404,53,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,22,BRB given EC uniform rand,636,420,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,23,wind BRB,625,352,34,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,24,21,23,1,0,0,0,0,128,0,-1--1--1,,1|(600,379)|
+1,25,22,23,1,0,0,0,0,128,0,-1--1--1,,1|(628,390)|
+1,26,4,23,1,0,0,0,0,128,0,-1--1--1,,1|(595,318)|
+1,27,23,18,1,0,0,0,0,128,0,-1--1--1,,1|(681,357)|
+10,28,base location GEV,368,144,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,29,28,1,1,0,0,0,0,128,0,-1--1--1,,1|(394,190)|
+10,30,p BRB given EC ramp,509,528,54,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-0-0,0,0,0,0,0,0
+10,31,wind threshold,829,496,46,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,32,wind damage coefficient,959,335,43,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,33,32,18,1,0,0,0,0,128,0,-1--1--1,,1|(865,386)|
+10,34,SST,588,557,25,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,35,threshold SST coeff,717,612,46,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,36,threshold intercept,1011,540,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,37,p BRB given EC init,350,445,54,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,38,37,21,1,0,0,0,0,128,0,-1--1--1,,1|(448,441)|
+1,39,30,21,1,0,0,0,0,128,0,-1--1--1,,1|(508,464)|
+10,40,discount rate,990,583,41,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,41,p BRB given EC,823,600,46,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,42,35,31,1,0,0,0,0,128,0,-1--1--1,,1|(786,563)|
+1,43,41,31,1,0,0,0,0,128,0,-1--1--1,,1|(833,568)|
+1,44,40,31,1,0,0,0,0,128,0,-1--1--1,,1|(925,545)|
+1,45,36,31,1,0,0,0,0,128,0,-1--1--1,,1|(958,529)|
+10,46,threshold log mult coeff,957,484,56,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,47,46,31,1,0,0,0,0,128,0,-1--1--1,,1|(890,476)|
+10,48,expected SST rate of increase,968,392,60,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,49,48,31,1,0,0,0,0,128,0,-1--1--1,,1|(864,444)|
+10,50,damage SST coeff,347,668,58,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+10,51,damage SST coeff,994,437,46,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,52,51,31,1,0,0,0,0,128,0,-1--1--1,,1|(920,447)|
+10,53,incremental damage factor from CC,475,612,63,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,54,SST,503,691,25,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,55,50,53,1,0,0,0,0,128,0,-1--1--1,,1|(371,640)|
+1,56,54,53,1,0,0,0,0,128,0,-1--1--1,,1|(506,659)|
+10,57,TIME STEP,433,734,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,58,57,53,1,0,0,0,0,64,0,-1--1--1,,1|(462,687)|
+10,59,vintage wind threshold,694,828,40,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,60,wind threshold,644,867,55,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,61,wind threshold index,800,796,47,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,62,59,61,1,0,0,0,0,128,0,-1--1--1,,1|(747,827)|
+1,63,60,61,1,0,0,0,0,128,0,-1--1--1,,1|(730,865)|
+10,64,I,792,710,5,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,65,K vintage,967,746,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,66,48,800,746,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,67,69,65,4,0,0,22,0,0,0,-1--1--1,,1|(898,746)|
+1,68,69,66,100,0,0,22,0,0,0,-1--1--1,,1|(833,746)|
+11,69,48,863,746,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,70,investment,863,765,34,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+12,71,48,1108,751,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,72,74,71,4,0,0,22,0,0,0,-1--1--1,,1|(1077,750)|
+1,73,74,65,100,0,0,22,0,0,0,-1--1--1,,1|(1025,750)|
+11,74,48,1050,750,6,8,34,3,0,0,1,0,0,0,0,0,0,0,0,0
+10,75,depreciation,1050,769,39,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,76,65,75,1,0,0,0,0,128,0,-1--1--1,,1|(1007,791)|
+1,77,64,69,1,0,0,0,0,128,0,-1--1--1,,1|(832,720)|
+1,78,61,70,1,0,0,0,0,128,0,-1--1--1,,1|(849,795)|
+10,79,wind damage,1139,882,51,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,80,vintage wind threshold,766,457,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,81,80,18,1,0,0,0,0,128,0,-1--1--1,,1|(751,427)|
+12,82,48,967,905,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,83,85,82,4,0,0,22,0,0,0,-1--1--1,,1|(967,872)|
+1,84,85,65,100,0,0,22,0,0,0,-1--1--1,,1|(967,800)|
+11,85,48,967,841,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,86,loss of productive capital,1032,841,57,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,87,79,86,1,0,0,0,0,128,0,-1--1--1,,1|(1038,871)|
+1,88,65,85,1,0,0,0,0,128,0,-1--1--1,,1|(916,795)|
+10,89,relative expected SST rate of increase,1124,321,70,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-0-0,0,0,0,0,0,0
+1,90,89,48,1,0,0,0,0,128,0,-1--1--1,,1|(1053,349)|
+10,91,initial SST,307,295,33,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,92,91,10,1,0,0,0,0,128,0,-1--1--1,,1|(293,266)|
+10,93,initial SST,585,468,42,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,94,accepted SST,700,505,45,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,95,93,94,1,0,0,0,0,128,0,-1--1--1,,1|(628,492)|
+1,96,34,94,1,0,0,0,0,128,0,-1--1--1,,1|(627,536)|
+1,97,94,31,1,0,0,0,0,128,0,-1--1--1,,1|(762,510)|
+10,98,init vs curr SST interpolation,705,567,49,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||255-0-0,0,0,0,0,0,0
+1,99,98,94,1,0,0,0,0,128,0,-1--1--1,,1|(709,530)|
+10,100,relative loss of productive capital,1038,941,57,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,101,86,100,1,0,0,0,0,128,0,-1--1--1,,1|(998,861)|
+10,102,K vintage,1122,982,40,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,103,102,100,1,0,0,0,0,128,0,-1--1--1,,1|(1117,952)|
+10,104,adaptation expenditure,710,777,37,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,105,theta,582,746,17,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,106,105,104,1,0,0,0,0,128,0,-1--1--1,,1|(633,743)|
+1,107,60,104,1,0,0,0,0,128,0,-1--1--1,,1|(634,815)|
+1,108,64,104,0,0,0,0,0,64,0,-1--1--1,,1|(765,731)|
+10,109,adaptation expenditure as a share of GDP,502,873,72,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,110,104,109,1,0,0,0,0,128,0,-1--1--1,,1|(596,793)|
+10,111,loss and damage as share of GDP,491,998,62,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+10,112,Rebuilding backlog,858,867,40,20,3,3,0,0,0,0,0,0,0,0,0,0,0,0
+12,113,48,862,957,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,114,116,112,4,0,0,22,0,0,0,-1--1--1,,1|(858,900)|
+1,115,116,113,100,0,0,22,0,0,0,-1--1--1,,1|(858,937)|
+11,116,48,858,920,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,117,damaged capital stock,918,920,52,19,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,118,85,116,1,0,0,0,0,128,0,-1--1--1,,1|(934,883)|
+12,119,48,857,790,10,8,0,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,120,122,119,4,0,0,22,0,0,0,-1--1--1,,1|(857,808)|
+1,121,122,112,100,0,0,22,0,0,0,-1--1--1,,1|(857,839)|
+11,122,48,857,825,8,6,33,3,0,0,4,0,0,0,0,0,0,0,0,0
+10,123,rebuilding,896,825,31,11,40,3,0,0,-1,0,0,0,0,0,0,0,0,0
+1,124,123,69,1,0,0,0,0,128,0,-1--1--1,,1|(890,791)|
+10,125,rebuilding,269,1009,40,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,126,125,111,1,0,0,0,0,128,0,-1--1--1,,1|(333,1016)|
+10,127,max rebuilding fraction of GDP,785,997,51,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,128,127,122,1,0,0,0,0,128,0,-1--1--1,,1|(786,901)|
+1,129,112,123,1,0,0,0,0,128,0,-1--1--1,,1|(919,853)|
+10,130,TIME STEP,886,712,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,131,130,70,0,0,0,0,0,64,0,-1--1--1,,1|(877,732)|
+10,132,SST scenario multiplier,188,149,43,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,133,132,10,1,0,0,0,0,128,0,-1--1--1,,1|(223,201)|
+10,134,INITIAL TIME,211,205,60,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,135,SST rate of increase,1138,386,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-128,0,0,0,0,0,0
+1,136,135,48,1,0,0,0,0,128,0,-1--1--1,,1|(1071,399)|
+10,137,SST scenario multiplier,1111,464,48,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,138,137,135,1,0,0,0,0,128,0,-1--1--1,,1|(1138,431)|
+10,139,consumption as a share of GDP,306,804,55,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+10,140,investment rate,683,669,56,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,141,140,64,1,0,0,0,0,128,0,-1--1--1,,1|(762,687)|
+10,142,K,865,660,8,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,143,65,142,1,0,0,0,0,128,0,-1--1--1,,1|(952,697)|
+10,144,depreciation rate,1027,636,53,11,8,3,0,2,-1,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,145,144,75,1,0,0,0,0,128,0,-1--1--1,,1|(1071,692)|
+1,146,144,31,1,0,0,0,0,128,0,-1--1--1,,1|(917,586)|
+10,147,gdp,595,954,23,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,148,147,109,1,0,0,0,0,128,0,-1--1--1,,1|(573,912)|
+1,149,147,111,1,0,0,0,0,128,0,-1--1--1,,1|(569,981)|
+1,150,147,122,1,0,0,0,0,128,0,-1--1--1,,1|(691,888)|
+1,151,142,64,1,0,0,0,0,128,0,-1--1--1,,1|(820,670)|
+10,152,initial capital,1008,681,39,11,8,3,0,2,-1,0,0,0,-1--1--1,0-0-0,|12||0-128-0,0,0,0,0,0,0
+1,153,152,65,1,0,0,0,0,128,1,-1--1--1,,1|(982,702)|
+10,154,value of rebuilding and adaptation expenditure,1348,758,72,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,155,adaptation expenditure,1212,700,42,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,156,rebuilding,1468,689,40,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,157,155,154,1,0,0,0,0,128,0,-1--1--1,,1|(1296,691)|
+1,158,156,154,1,0,0,0,0,128,0,-1--1--1,,1|(1400,705)|
+10,159,GDP price level,279,893,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,160,domestic price of investment,380,944,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,161,159,109,1,0,0,0,0,128,0,-1--1--1,,1|(361,849)|
+1,162,160,109,1,0,0,0,0,128,0,-1--1--1,,1|(465,933)|
+1,163,160,111,1,0,0,0,0,128,0,-1--1--1,,1|(458,972)|
+1,164,159,111,1,0,0,0,0,128,0,-1--1--1,,1|(377,997)|
+10,165,domestic price of investment,1329,847,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,166,165,154,1,0,0,0,0,128,0,-1--1--1,,1|(1346,822)|
+10,167,gdp basic consumption direct,149,770,65,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,168,167,139,1,0,0,0,0,128,0,-1--1--1,,1|(211,767)|
+10,169,wage bill smoothed,210,701,36,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,170,169,139,1,0,0,0,0,128,0,-1--1--1,,1|(267,736)|
+10,171,gdp nominal,128,848,48,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,172,171,139,1,0,0,0,0,128,0,-1--1--1,,1|(198,819)|
+10,173,marginal expenditure on domestic goods,306,842,70,19,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,174,smoothed adj marginal saving out of wages,476,777,77,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,175,174,139,1,0,0,0,0,128,0,-1--1--1,,1|(372,771)|
+10,176,hurricane occurrence,671,258,36,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,177,23,176,1,0,0,0,0,128,0,-1--1--1,,1|(633,314)|
+10,178,hurricane season,692,120,52,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,179,TIME STEP,692,150,50,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,180,Time,733,177,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,181,180,178,1,0,0,0,0,128,0,-1--1--1,,1|(701,142)|
+1,182,178,5,1,0,0,0,0,128,0,-1--1--1,,1|(629,160)|
+10,183,initial T anomaly,149,313,51,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,184,T anomaly,267,376,34,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,185,SST to T coeff,144,416,47,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,186,183,184,1,0,0,0,0,128,0,-1--1--1,,1|(183,346)|
+1,187,91,184,1,0,0,0,0,128,0,-1--1--1,,1|(303,337)|
+1,188,185,184,1,0,0,0,0,128,0,-1--1--1,,1|(204,412)|
+1,189,10,184,1,0,0,0,0,128,0,-1--1--1,,1|(245,295)|
+10,190,global climate damage fraction,228,498,51,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,191,184,190,1,0,0,0,0,128,0,-1--1--1,,1|(265,417)|
+10,192,DICE a1,123,500,30,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,193,DICE a2,113,554,30,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,194,DICE a3,161,582,30,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,195,192,190,1,0,0,0,0,128,0,-1--1--1,,1|(151,480)|
+1,196,193,190,1,0,0,0,0,128,0,-1--1--1,,1|(159,542)|
+1,197,194,190,1,0,0,0,0,128,0,-1--1--1,,1|(194,566)|
+10,198,climate damage impact on global growth,326,566,72,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,199,190,198,1,0,0,0,0,128,0,-1--1--1,,1|(303,512)|
+10,200,CCRIF annual premium,784,83,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,201,CCRIF maximum payout,1107,113,57,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,202,CCRIF attachment,1198,177,60,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,203,CCRIF exhaustion,1200,246,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,204,CCRIF payout,1004,188,48,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,205,201,204,1,0,0,0,0,128,0,-1--1--1,,1|(1053,134)|
+1,206,202,204,1,0,0,0,0,128,0,-1--1--1,,1|(1093,176)|
+1,207,203,204,1,0,0,0,0,128,0,-1--1--1,,1|(1077,242)|
+1,208,19,204,1,0,0,0,0,128,0,-1--1--1,,1|(902,254)|
+1,209,23,204,1,0,0,0,0,128,0,-1--1--1,,1|(799,228)|
+10,210,net CCRIF payout in BBD,921,124,60,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,211,200,210,1,0,0,0,0,128,0,-1--1--1,,1|(861,79)|
+1,212,204,210,1,0,0,0,0,128,0,-1--1--1,,1|(957,168)|
+10,213,exchange rate,992,55,53,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,214,213,210,1,0,0,0,0,128,0,-1--1--1,,1|(945,80)|
+10,215,GDP price level,694,955,59,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,216,domestic price of investment,690,916,60,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,217,216,123,1,0,0,0,0,128,0,-1--1--1,,1|(760,870)|
+1,218,215,123,1,0,0,0,0,128,0,-1--1--1,,1|(756,897)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*tourism
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,real exchange rate,915,270,57,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,2,source country price level,1055,278,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,3,2,1,1,0,45,0,2,128,0,-1--1--1,|12||0-0-0,1|(995,266)|
+10,4,growth in number of airlines,582,510,56,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,5,exchange rate,1034,195,53,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,6,5,1,1,0,0,0,0,128,0,-1--1--1,,1|(963,230)|
+10,7,price of consumption,1038,373,45,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,8,GDP price level,866,403,59,11,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,9,tourism source country share,749,104,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,10,source country gdp gr,289,101,52,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,11,tourism weighted source country gdp gr,586,168,70,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,12,9,11,1,0,0,0,0,128,0,-1--1--1,,1|(662,112)|
+1,13,10,11,1,0,0,0,0,128,0,-1--1--1,,1|(473,123)|
+10,14,tourism expenditure gr,646,356,46,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,15,tourism weighted real exchange rate,854,200,68,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,16,7,1,1,0,0,0,0,128,0,-1--1--1,,1|(971,340)|
+1,17,9,15,1,0,0,0,0,128,0,-1--1--1,,1|(815,117)|
+1,18,1,15,1,0,0,0,0,128,0,-1--1--1,,1|(893,247)|
+10,19,gr of tourism weighted real exchange rate,779,261,71,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,20,15,19,1,0,0,0,0,128,0,-1--1--1,,1|(795,229)|
+10,21,tourist season,451,262,43,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,22,Time,258,205,26,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,23,22,21,1,0,0,0,0,128,0,-1--1--1,,1|(365,226)|
+10,24,hurricane dummy,441,338,54,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,25,hurricane occurrence,225,295,41,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,26,25,24,1,0,0,0,0,128,0,-1--1--1,,1|(327,334)|
+1,27,19,14,1,0,0,0,0,128,0,-1--1--1,,1|(750,315)|
+1,28,11,14,1,0,0,0,0,128,0,-1--1--1,,1|(574,259)|
+1,29,21,14,1,0,0,0,0,128,0,-1--1--1,,1|(529,289)|
+1,30,24,14,1,0,0,0,0,128,0,-1--1--1,,1|(508,358)|
+1,31,4,14,1,0,0,0,0,128,0,-1--1--1,,1|(625,447)|
+10,32,tourist expenditure,749,427,58,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,33,TIME STEP,906,416,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+10,34,init tourist expenditure,862,523,37,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,35,34,32,1,0,0,0,0,128,1,-1--1--1,,1|(828,476)|
+1,36,33,32,1,0,0,0,0,128,0,-1--1--1,,1|(852,437)|
+1,37,14,32,1,0,0,0,0,128,0,-1--1--1,,1|(708,383)|
+10,38,tourism hurricane coeff,409,383,55,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,39,tourism source country gdp coeff,639,222,56,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,40,39,14,1,0,0,0,0,128,0,-1--1--1,,1|(625,280)|
+1,41,38,14,1,0,0,0,0,128,0,-1--1--1,,1|(530,398)|
+10,42,tourism xr coeff,816,317,49,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,43,tourism airlines coeff,475,483,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,44,43,14,1,0,0,0,0,128,0,-1--1--1,,1|(550,444)|
+1,45,42,14,1,0,0,0,0,128,0,-1--1--1,,1|(760,347)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*external drivers
+$192-192-192,0,Times New Roman|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|96,96,100,0
+10,1,normal model world gdp gr,386,401,44,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,2,delay 1 normal model world gdp gr,583,413,69,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,3,init world gdp gr,752,380,52,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,4,3,2,1,0,0,0,0,128,1,-1--1--1,,1|(699,427)|
+1,5,2,1,1,0,0,0,0,128,0,-1--1--1,,1|(479,442)|
+1,6,1,2,1,0,0,0,0,128,0,-1--1--1,,1|(507,391)|
+10,7,recession,394,203,30,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,8,source country gdp gr,537,170,47,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+10,9,delay 1 source country gdp gr,559,43,47,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,10,8,9,1,0,0,0,0,128,0,-1--1--1,,1|(476,107)|
+1,11,9,8,1,0,0,0,0,128,0,-1--1--1,,1|(603,107)|
+10,12,source country gdp gr const,312,66,61,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,13,12,8,1,0,0,0,0,128,0,-1--1--1,,1|(413,120)|
+10,14,source country gdp gr world,278,112,61,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,15,source country grp gr world lag 1,241,165,68,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,16,source country gdp gr own lag 1,745,173,61,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,17,init source country gdp gr,746,43,58,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,18,14,8,1,0,0,0,0,128,0,-1--1--1,,1|(360,139)|
+1,19,15,8,1,0,0,0,0,128,0,-1--1--1,,1|(392,167)|
+1,20,16,8,1,0,0,0,0,128,0,-1--1--1,,1|(636,180)|
+1,21,17,9,1,0,0,0,0,128,1,-1--1--1,,1|(669,70)|
+10,22,source country gdp gr sd,695,115,47,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,23,22,8,1,0,0,0,0,128,0,-1--1--1,,1|(630,149)|
+10,24,world gdp gr,524,246,41,11,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,25,7,24,1,0,0,0,0,128,0,-1--1--1,,1|(467,219)|
+1,26,1,24,1,0,0,0,0,128,0,-1--1--1,,1|(395,365)|
+10,27,delay 1 world gdp gr,667,252,44,19,8,3,0,0,0,0,0,0,0,0,0,0,0,0
+1,28,24,27,1,0,0,0,0,128,0,-1--1--1,,1|(599,276)|
+1,29,27,8,1,0,0,0,0,128,0,-1--1--1,,1|(621,209)|
+1,30,24,8,1,0,0,0,0,128,0,-1--1--1,,1|(541,214)|
+1,31,3,27,1,0,0,0,0,64,1,-1--1--1,,1|(738,310)|
+10,32,mean world gdp gr,209,345,59,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,33,world gdp gr lag 1 coeff,153,399,53,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,34,world gdp gr sd,165,460,50,11,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,35,32,1,1,0,0,0,0,128,0,-1--1--1,,1|(329,348)|
+1,36,33,1,1,0,0,0,0,128,0,-1--1--1,,1|(246,421)|
+1,37,34,1,1,0,0,0,0,128,0,-1--1--1,,1|(259,488)|
+10,38,recession probability,212,268,34,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+10,39,mean depth of recession,306,301,46,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,40,38,7,1,0,0,0,0,128,0,-1--1--1,,1|(285,229)|
+1,41,39,7,1,0,0,0,0,128,0,-1--1--1,,1|(368,262)|
+10,42,TIME STEP,427,261,50,11,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,43,42,7,0,0,0,0,0,64,0,-1--1--1,,1|(414,238)|
+10,44,max depth of recession,156,222,42,19,8,3,0,2,0,0,0,0,-1--1--1,0-0-0,|12||0-0-255,0,0,0,0,0,0
+1,45,44,7,1,0,0,0,0,128,0,-1--1--1,,1|(280,204)|
+10,46,climate damage impact on global growth,593,329,77,19,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128,0,0,0,0,0,0
+1,47,46,24,1,0,0,0,0,128,0,-1--1--1,,1|(537,289)|
+///---\\\
+:GRAPH D_calib
+:TITLE Debt Calibration
+:SCALE
+:VAR D calc
+:VAR D
+
+:GRAPH imports_calib
+:TITLE Imports Calibration
+:SCALE
+:VAR imports calc
+:VAR imports
+
+:GRAPH gdp_calib
+:TITLE GDP Calibration
+:SCALE
+:VAR gdp calc
+:VAR gdp
+
+:GRAPH gdp_contribution
+:TITLE Contributions to GDP
+:SCALE
+:VAR gdp exports direct|X direct
+:VAR gdp exports indirect|X indirect
+:VAR gdp basic consumption direct|N direct
+:VAR gdp basic consumption indirect|N indirect
+
+:GRAPH x_smoothing
+:TITLE Export Demand and Production
+:SCALE
+:VAR X|Demand
+:VAR X prod|Production
+:L<%^E!@
+1:Scenario stochastic CC BASELINE.vdfx
+8:scenario_graphs.vgd
+9:Scenario stochastic CC BASELINE
+30:?params=BB_parameters.csv
+30:?vintage_thresholds=vintage_thresholds.csv
+11:GLCS_two_sector.voc
+12:GLCS_two_sector.vpd
+18:BB_sensitivity.vsc
+20:BB_sensitivity.lst
+15:1,0,0,0,0,0
+19:100,8
+27:0,
+34:0,
+4:Time
+5:max depth of recession
+35:Year
+36:YYYY
+37:0
+38:1
+39:1
+40:0
+41:0
+42:0
+72:0
+73:0
+24:2011
+25:2080
+26:2080
+75:
+43:
+6:CAN
+6:CSS
+6:domestic
+6:export
+6:GBR
+6:USA
+6:w65
+6:w75

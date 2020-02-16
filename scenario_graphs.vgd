@@ -1,10 +1,9 @@
-:GRAPH GDP_truncated
-:TITLE  
+:GRAPH GDP_components
+:TITLE Components of GDP
+:WIDTH 6
+:HEIGHT 4
+:STACK-FILL 0
 :SCALE
-:VAR gdp[CS1]
-:Y-MAX 4e+006
-:VAR gdp[CS2]
-:VAR gdp[CS3]
-:VAR gdp[CS4]
-:VAR gdp[CS1]
-:DATASET JM
+:VAR gdp basic consumption direct
+:VAR gdp exports direct
+:VAR gdp indirect
